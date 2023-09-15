@@ -4,7 +4,7 @@ function selectAnalysis(hO,~)
 currentFolder = pwd;
 %addpath(genpath(currentFolder))
 addpath(currentFolder) % do not include subfolders
-
+  
 switch hO.String
         
     case 'calcium sparks detection'
