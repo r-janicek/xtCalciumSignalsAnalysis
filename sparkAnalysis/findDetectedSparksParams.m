@@ -1,5 +1,5 @@
 function eventParams = findDetectedSparksParams(...
-    img,statSparks,mainFig,calcMethod,sparksRec)
+    img, statSparks, mainFig ,calcMethod, sparksRec)
 
 % img = not normalized data, raw data
 % statSparks = statistic from sparks detection
@@ -7,14 +7,13 @@ function eventParams = findDetectedSparksParams(...
 % get data
 imgData = getappdata(mainFig,'imgData');
 hObjs = getappdata(mainFig,'hObjs');
-t_whImg = imgData.t;
 
 pxSzT = imgData.pxSzT;
 pxSzX = imgData.pxSzX;
 scrRes = get(0,'ScreenSize');
 
 % filter raw image
-img = imgFiltering(img,pxSzT,pxSzX);
+img = imgFiltering(img, pxSzT, pxSzX);
 
 % t-profile = average from 1 um width area
 % x-profile = average from 5 ms width area
@@ -53,10 +52,11 @@ if ~isempty(statSparks)
         sparkROInum = str2double(sparksRec(i).Tag);
         
         % get image of event and max crossing profiles
-        [imgE,imgEs,imgE_m,maxOfEventPos,maxCrossProfs,t0,bs,eventROIstart_t] = ...
+        [imgE, imgEs, imgE_m, maxOfEventPos, ... 
+            maxCrossProfs, t0, bs, eventROIstart_t] = ...
             eventImgAndMaxCrossingProfiles( ...
-            statSparks(i),[],[],...
-            pxSzT,pxSzX,n_px_t,n_px_x,img,[],mainFig);
+            statSparks(i), [], [],...
+            pxSzT, pxSzX, n_px_t, n_px_x, img, [], mainFig);
 
         t = maxCrossProfs.t;
         t_ups = maxCrossProfs.t_ups;
@@ -163,28 +163,18 @@ if ~isempty(statSparks)
                 try
                     % get parameters of spark from profiles without 2D fitting            
                     % do fits of profiles
-                    % use coeficient from previous fitting (t0, tauR, A, baseline)
-                    try
-                        tauR = (t(peakData_tProf.pos)-t0)*0.66;
-                    catch
-                        %t0 = peakData_tProf.pos*pxSzT - 5; % in ms, 5 ms before max
-                        %if t0<1, t0 = 1; end
-                        %bs = mean(t_event_prof(1:ceil(t0/pxSzT)));
-                        tauR = 5;
-                    end
-                    
                     try
                         % try fitting
                         % '1expR1expD' piecewise: coefficients: [t0, F01, tauR, A, t1, tauD, F02]
                         % 'spline' piecewise: coefficients: [t0, F01]
                         % modified gaussian = 'EMG', coefficients:[A,m,sd,tau,F0]
                         % p0 = [t0 bs tauR v_max_t p_max_t*pxSzT 15 mean(t_spark_prof(end-5:end))];
-                        p0 = [t0 bs];
                         % p0 = [v_max_t p_max_t*pxSzT p_max_t*pxSzT-t0 15 bs];
-
+                        % initial parameters for time profile fit
                         p0 = [t0 bs];
                         out_t_prof = fitOneWholeEvent( ...
-                            p0,t,t_ups,t_event_prof,'yes','spline',tProf_m);
+                            p0, t, t_ups, t_event_prof, ...
+                            'yes', 'spline', tProf_m);
                         
                         bs_t_prof = out_t_prof.bs;
                         t0_t_prof = out_t_prof.t0;
@@ -203,7 +193,7 @@ if ~isempty(statSparks)
                         % fit
                         out_x_prof = fitOneWholeEvent(...
                             [bs v_max_x-bs w p_max_x*pxSzX-pxSzX],...
-                            x,x_ups,x_event_prof,'no','Gauss',xProf_m);
+                            x, x_ups, x_event_prof, 'no', 'Gauss', xProf_m);
                         
                         % baseline of x profile
                         bs_x_prof = out_x_prof.bs;
@@ -229,8 +219,8 @@ if ~isempty(statSparks)
                         eP_profs = getParametersOfEventProfile( ...
                             t_ups,out_t_prof.yFit_ups,...
                             x_ups,out_x_prof.yFit_ups,...
-                            bs_t_prof,bs_x_prof,t0_t_prof,...
-                            imgData.blank,peakData_ups,tProf_m_ups);
+                            bs_t_prof, bs_x_prof, t0_t_prof,...
+                            imgData.blank, peakData_ups, tProf_m_ups);
                        
                     catch
                         % get params from image of event

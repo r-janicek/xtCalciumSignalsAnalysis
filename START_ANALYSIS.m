@@ -7,11 +7,11 @@ set(groot,'defaultAxesCreateFcn',@(ax,~)set(ax.Toolbar,'Visible','off'))
 
 % create main window, search if the figure exists
 hf = findall(0,'tag','selectAnalysis');
-if (isempty(hf))
+if isempty(hf)
     % Launch the figure
     % main_figure
     mainFig = figure('Name','select analysis','units','normalized', ...
-        'Position',[0.5 0.25 0.25 0.5]);
+        'Position',[0.375 0.25 0.25 0.5]);
     set(mainFig, 'PaperPositionMode', 'auto',...
         'PaperOrientation', 'landscape',...
         'PaperType', 'A4',...
@@ -36,15 +36,14 @@ catch
     rmpath(pathStrRm);
 end
 
-% get current folder
-currentFolder = pwd;
-expression = 'gitHub';
-splitStr = regexp(currentFolder,expression,'split');
-
-newWorkDirPath = [splitStr{1,1},'gitHub/CaSignalsAnalysis'];
-cd(newWorkDirPath)
-addpath(currentFolder) % do not include subfolders
+% set working directory
+mfilePath = mfilename('fullpath');
+wd_path = fileparts(mfilePath);
+addpath(wd_path) % do not include subfolders
 %addpath(genpath(currentFolder))
+% add path of folders containing functions for loading image
+addpath(fullfile(wd_path,'OME_bioformats'))
+addpath(fullfile(wd_path,'sharedFunctions'))
 
 % panel for choose analysis
 hp1 = uipanel('Title','select type of calcium signals:', ...
@@ -63,7 +62,7 @@ dx = (1-nC*w)/(nC+1);
 pb_names = {'calcium sparks detection', ...
             'calcium sparks recovery',...
             'calcium transients & waves'};
-c = {'k','c','m'};        
+c = {'k','b','r'};        
 
 for i=1:nR*nC
     
@@ -74,7 +73,7 @@ for i=1:nR*nC
         'FontUnits','normalized','Parent',hp1,'Units','normalized',...
         'FontSize',0.225,'Position',[col*dx+(col-1)*w 1-row*h-row*dy w h],...
         'FontWeight','bold','ForegroundColor',c{i},...
-        'Callback',@selectAnalysis);
+        'Callback',{@selectAnalysis, wd_path});
     
     if i==N_pb
         break

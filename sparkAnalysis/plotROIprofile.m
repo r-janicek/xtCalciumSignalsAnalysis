@@ -81,13 +81,14 @@ end
 
 image(cropRoi,'YData',[y_px(1) y_px(end)],'XData',[t(1) t(end)],...
     'CDataMapping','scaled','Parent',ax_img_sparks);
-set(get(ax_img_sparks,'Ylabel'),'String','x (pixels)','FontWeight','bold')
+set(get(ax_img_sparks,'Ylabel'),'String','x (pixels)','FontWeight','bold', 'Tag','img_sparks')
 set(ax_img_sparks,'XTick',[],'FontSize',14,'YDir','reverse','YAxisLocation','left')
 
 % set and add interactive scale
 sc_num = (diff(ax_img_sparks.YLim)*pxSzX)/2; % in um
 hObjs.h_txt_scale.String = [sprintf('%0.2f',sc_num),' \mum'];
-editScaleListener = addlistener(ax_img_sparks,'YLim','PostSet',@(varargin)scaleLineChange(varargin,mainFig));
+editScaleListener = addlistener(ax_img_sparks, 'YLim', 'PostSet', ...
+    @(varargin)scaleLineChange(varargin,mainFig));
 setappdata(mainFig,'editScaleListener',editScaleListener)
 
 % show borders of area taken for average profile

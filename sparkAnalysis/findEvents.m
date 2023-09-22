@@ -35,25 +35,16 @@ detectEventsPB = getappdata(mainFig,'lastPressedPusbutton');
 % image of detected events in filtered and normalized image, depends on
 % analysis
 switch analysisType
-    
     case 'spark detection'
         imgEvents = imgData.imgDataXTfluoFN; % filtered and normalized
         
-    case 'spark recovery ryanodine'
-        
+    case 'spark recovery ryanodine' 
         if strcmp(detectEventsPB.Tag,'findEvents')
             imgEvents = imgData.imgDataXTfluoFN;
         else         
             imgEvents = profileAnalysis.croppedDataWholeAreaRoi;
         end
                    
-    case 'spark recovery photolysis'
-        if strcmp(detectEventsPB.Tag,'findEvents')
-            imgEvents = imgData.imgDataXTfluoF;
-        else
-            imgEvents = profileAnalysis.croppedDataWholeAreaRoi;
-        end
-        
     otherwise
         imgEvents = imgData.imgDataXTfluoFN;
         

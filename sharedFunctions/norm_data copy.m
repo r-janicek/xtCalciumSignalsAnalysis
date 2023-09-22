@@ -1,7 +1,7 @@
 function norm_data(~,~,mainFig)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
-
+keyboard
 hObjs = getappdata(mainFig,'hObjs');
 imgData = getappdata(mainFig,'imgData');
 

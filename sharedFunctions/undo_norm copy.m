@@ -1,12 +1,10 @@
 function undo_norm(~,~,mainFig)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+% start over with normalization process
 
 imgData = getappdata(mainFig,'imgData');
 hObjs = getappdata(mainFig,'hObjs'); 
 
 if imgData.norm_flag==1
-
     % set up data
     imgData.imgDataXTfluoRN = imgData.imgDataXTfluoR;
     imgData.imgDataXTfluoFN = imgData.imgDataXTfluoF;
@@ -20,17 +18,18 @@ if imgData.norm_flag==1
     delete(findobj(ax_img,'Type','Patch'))
        
     set(whole_img_h,'CData',imgData.imgDataXTfluoFN)   
-    set(get(ax_img,'Ylabel'),'String','x (pixels) [filtered]')   
-    caxis(ax_img,[imgData.z_min_img imgData.z_max_img])
+    set(get(ax_img,'Ylabel'), 'String','x (pixels) [filtered]')   
+    clim(ax_img,[imgData.z_min_img imgData.z_max_img])
     
-    cla(hObjs.ax_img_sparks)
+    if isfield(hObjs, 'ax_img_sparks')
+        cla(hObjs.ax_img_sparks)
+    end
     cla(hObjs.ax_prof)
     
     set(mainFig,'WindowKeyPressFcn',[]);
     set(mainFig,'WindowButtonUpFcn',[]);
     set(mainFig,'WindowButtonMotionFcn',[]);
      
-    
     % restar table for detected profiles
     if isfield(getappdata(mainFig),'profileAnalysis')
         set(hObjs.h_table_profs,'Data',zeros(5,2))

@@ -1,7 +1,5 @@
 function norm_calc_sparksDet(mainFig)
-
 % normalize image, areas of detected sparks are excluded
-
 % get data
 imgData = getappdata(mainFig,'imgData');
 hObjs = getappdata(mainFig,'hObjs');
@@ -33,7 +31,6 @@ F0 = zeros(size(imgDataXTfluoFN,1),1);
 F0raw = zeros(size(imgDataXTfluoFN,1),1);
 
 for i = 1:size(imgDataXTfluoFN,1)
-    
     % omnit NaNs
     F0_line = imgDataXTfluoFN(i,~mNaN(i,:));
     F0_line_r = imgDataXTfluoRN(i,~mNaN(i,:));
@@ -101,7 +98,7 @@ imgData.stdNoise = Sigma;
 hObjs.h_edit_noise.String = num2str(5*Sigma);
 
 % save data
-setappdata(mainFig,'imgData',imgData);
+setappdata(mainFig, 'imgData',imgData);
 
 end
 

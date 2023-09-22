@@ -26,22 +26,24 @@ maskOfAcceptedSparks = mA & mFDHM & mFWHM;
 maskOfAcceptedSparks = maskOfAcceptedSparks';
 
 % set accepted sparks rectangle color to red, not accepted to black
-arrayfun(@(x) set(x,'EdgeColor','k'), sparkDetection.detectedEventsRec(~maskOfAcceptedSparks) )
-arrayfun(@(x) set(x,'EdgeColor','k'), sparkDetection.detectedEventsMask(~maskOfAcceptedSparks) )
+arrayfun(@(x) set(x,'EdgeColor','k'), ...
+    sparkDetection.detectedEventsRec(~maskOfAcceptedSparks) )
+arrayfun(@(x) set(x,'EdgeColor','k'), ...
+    sparkDetection.detectedEventsMask(~maskOfAcceptedSparks) )
 
 strRejectedSparks = arrayfun(@(x) get(x,'Tag'), ...
     sparkDetection.detectedEventsRec(~maskOfAcceptedSparks), ...
-    'UniformOutput', 0 );
+    'UniformOutput',0);
 % get rectangle texts
-rectTxt = findall(hObjs.ax_img,'Tag','detectedEventRecText');
-rectTxtStr = arrayfun(@(x) get(x,'String'), rectTxt, 'UniformOutput', 0 );
+rectTxt = findall(hObjs.ax_img, 'Tag','detectedEventRecText');
+rectTxtStr = arrayfun(@(x) get(x,'String'), rectTxt, 'UniformOutput', 0);
 % find mask for rextangle texts, it depends how findall is searching and
 % sorting results
-
-mStrRecTxt_rejectedSparks = ismember( str2num(char(rectTxtStr)), str2num(char(strRejectedSparks)) );
+mStrRecTxt_rejectedSparks = ismember( str2num(char(rectTxtStr)), ...
+    str2num(char(strRejectedSparks)) );
 
 % set color of text, which belongs to rectangles
-arrayfun(@(x) set(x,'Color','k'), rectTxt(mStrRecTxt_rejectedSparks) )
+arrayfun(@(x) set(x,'Color','k'), rectTxt(mStrRecTxt_rejectedSparks))
 
 % save data
 sparkDetection.maskOfAcceptedSparks = maskOfAcceptedSparks;

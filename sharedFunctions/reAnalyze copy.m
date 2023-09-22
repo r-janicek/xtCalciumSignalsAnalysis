@@ -21,11 +21,6 @@ fileNameXLS = listing.name(indXLS);
 
 indImgXLS = cellfun(@(x) ~isempty( regexp(x,nImg,'once') ), fileNameXLS);
 try
-%     oldAnalysisInfo = readtable(fullfile(imgData.filePath,fileNameXLS{indImgXLS}),...
-%         'ReadVariableNames',false,...
-%         'Sheet','info', ...
-%         'FileType', 'spreadsheet');
-%     oldAnalysisInfo = table2cell(oldAnalysisInfo);
     oldAnalysisInfo = readcell(fullfile(imgData.filePath,fileNameXLS{indImgXLS}), ...
         'Sheet','info');
 catch
@@ -34,10 +29,14 @@ catch
 end
 
 % get info from old analysis
-[rA,~]=find(cellfun(@(x) ~isempty(strfind(x,'animal:')),oldAnalysisInfo,'UniformOutput',1)==1);
-[rBlank,~]=find(cellfun(@(x) ~isempty(strfind(x,'blank:')),oldAnalysisInfo,'UniformOutput',1)==1);
-[rExpS,~]=find(cellfun(@(x) ~isempty(strfind(x,'exp_notes:')),oldAnalysisInfo,'UniformOutput',1)==1);
-rExpE = find( cellfun(@(x) all(ismissing(x)), oldAnalysisInfo(rExpS+1:end,1)),1,'first');
+[rA, ~] = find(cellfun(@(x) ~isempty(strfind(x,'animal:')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+[rBlank, ~] = find(cellfun(@(x) ~isempty(strfind(x,'blank:')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+[rExpS, ~] = find(cellfun(@(x) ~isempty(strfind(x,'exp_notes:')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+rExpE = find( cellfun(@(x) all(ismissing(x)), ...
+    oldAnalysisInfo(rExpS+1:end,1)),1,'first');
 
 animal = oldAnalysisInfo{rA,2};
 expInfo = oldAnalysisInfo(rExpS+1:rExpS+rExpE-1,1);
@@ -45,9 +44,6 @@ blank = oldAnalysisInfo{rBlank,2};
 
 % set up main window
 % set up animal
-% if isnan(animal)
-%     animal = 'wt';
-% end
 hObjs.popUpMenuAnimal.Value = ...
     find(strcmp(hObjs.popUpMenuAnimal.String,animal));
  
@@ -56,7 +52,6 @@ set(hObjs.h_table_notes,'Data',expInfo)
 
 % set up blank value
 hObjs.h_edit_Blank.String = blank;
-
 
 end
 

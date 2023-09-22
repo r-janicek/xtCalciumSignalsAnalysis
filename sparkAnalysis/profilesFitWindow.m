@@ -1,11 +1,10 @@
 function profilesFitWindow(~,~,mainFig)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
-
+% window to fit selected profiles with repetitive sparks
 imgData = getappdata(mainFig,'imgData');
 profileAnalysis = getappdata(mainFig,'profileAnalysis');
 
-if ~isfield(profileAnalysis,'selectedROIs') || isempty(profileAnalysis.selectedROIs)
+if ~isfield(profileAnalysis,'selectedROIs') || ...    
+    isempty(profileAnalysis.selectedROIs)
     return
 end
 

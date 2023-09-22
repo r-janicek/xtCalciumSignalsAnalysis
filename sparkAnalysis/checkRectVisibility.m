@@ -1,5 +1,5 @@
 function checkRectVisibility(h_obj,~,mainFig)
-
+% show or hide detected events rectangles
 val = get(h_obj,'Value');
 sparkDetection = getappdata(mainFig,'sparkDetection');
 hObjs = getappdata(mainFig,'hObjs');
