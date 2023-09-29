@@ -1,5 +1,5 @@
 function eventParams = findDetectedSparksParams(...
-    img,statSparks,mainFig,calcMethod,sparksRec)
+    img, statSparks, mainFig ,calcMethod, sparksRec)
 
 % img = not normalized data, raw data
 % statSparks = statistic from sparks detection
@@ -7,14 +7,13 @@ function eventParams = findDetectedSparksParams(...
 % get data
 imgData = getappdata(mainFig,'imgData');
 hObjs = getappdata(mainFig,'hObjs');
-t_whImg = imgData.t;
 
 pxSzT = imgData.pxSzT;
 pxSzX = imgData.pxSzX;
 scrRes = get(0,'ScreenSize');
 
 % filter raw image
-img = imgFiltering(img,pxSzT,pxSzX);
+img = imgFiltering(img, pxSzT, pxSzX);
 
 % t-profile = average from 1 um width area
 % x-profile = average from 5 ms width area
@@ -53,10 +52,11 @@ if ~isempty(statSparks)
         sparkROInum = str2double(sparksRec(i).Tag);
         
         % get image of event and max crossing profiles
-        [imgE,imgEs,imgE_m,maxOfEventPos,maxCrossProfs,t0,bs,eventROIstart_t] = ...
+        [imgE, imgEs, imgE_m, maxOfEventPos, ... 
+            maxCrossProfs, t0, bs, eventROIstart_t] = ...
             eventImgAndMaxCrossingProfiles( ...
-            statSparks(i),[],[],...
-            pxSzT,pxSzX,n_px_t,n_px_x,img,[],mainFig);
+            statSparks(i), [], [],...
+            pxSzT, pxSzX, n_px_t, n_px_x, img, [], mainFig);
 
         t = maxCrossProfs.t;
         t_ups = maxCrossProfs.t_ups;
@@ -97,22 +97,23 @@ if ~isempty(statSparks)
                         
                         % get t and x profiles crossing max of fit
                         [rFitMax,cFitMax] = find(imgE_fit == max(imgE_fit(:)));
-                        t_data_prof = imgE(rFitMax,:); t_data_prof = t_data_prof(:);
-                        x_data_prof = imgE(:,cFitMax); x_data_prof = x_data_prof(:);
+                        t_event_prof = imgE(rFitMax,:); t_event_prof = t_event_prof(:);
+                        x_event_prof = imgE(:,cFitMax); x_event_prof = x_event_prof(:);
                         [rFitMaxUps,cFitMaxUps] = find(imgE_fit_ups == max(imgE_fit_ups(:)));
-                        t_fit_prof = imgE_fit_ups(rFitMaxUps,:);
-                        x_fit_prof = imgE_fit_ups(:,cFitMaxUps);
-                        t_fit_prof = t_fit_prof(:);
-                        x_fit_prof = x_fit_prof(:);
+                        t_prof_fit = imgE_fit_ups(rFitMaxUps,:);
+                        x_prof_fit = imgE_fit_ups(:,cFitMaxUps);
+                        t_prof_fit = t_prof_fit(:);
+                        x_prof_fit = x_prof_fit(:);
                         
                         [~,peakData_ups.pos] = ...
                             min( abs( t_ups - t(maxCrossProfs.peakData_tProf.pos) ) );
-                        peakData_ups.val = t_fit_prof(peakData_ups.pos);
+                        peakData_ups.val = t_prof_fit(peakData_ups.pos);
                         
-                        eP_2Dfit = getParametersOfEventProfile(t_ups,t_fit_prof,...
-                            x_ups,x_fit_prof,...
-                            t_fit_prof(1),t_fit_prof(1),[],...
-                            imgData.blank,peakData_ups,[]);
+                        eP_2Dfit = getParametersOfEventProfile( ...
+                            t_ups, t_prof_fit,...
+                            x_ups, x_prof_fit,...
+                            t_prof_fit(1), t_prof_fit(1),[],...
+                            imgData.blank, peakData_ups,[]);
                         
                     catch
                         % get params from image of event
@@ -163,28 +164,18 @@ if ~isempty(statSparks)
                 try
                     % get parameters of spark from profiles without 2D fitting            
                     % do fits of profiles
-                    % use coeficient from previous fitting (t0, tauR, A, baseline)
-                    try
-                        tauR = (t(peakData_tProf.pos)-t0)*0.66;
-                    catch
-                        %t0 = peakData_tProf.pos*pxSzT - 5; % in ms, 5 ms before max
-                        %if t0<1, t0 = 1; end
-                        %bs = mean(t_event_prof(1:ceil(t0/pxSzT)));
-                        tauR = 5;
-                    end
-                    
                     try
                         % try fitting
                         % '1expR1expD' piecewise: coefficients: [t0, F01, tauR, A, t1, tauD, F02]
                         % 'spline' piecewise: coefficients: [t0, F01]
                         % modified gaussian = 'EMG', coefficients:[A,m,sd,tau,F0]
                         % p0 = [t0 bs tauR v_max_t p_max_t*pxSzT 15 mean(t_spark_prof(end-5:end))];
-                        p0 = [t0 bs];
                         % p0 = [v_max_t p_max_t*pxSzT p_max_t*pxSzT-t0 15 bs];
-
+                        % initial parameters for time profile fit
                         p0 = [t0 bs];
                         out_t_prof = fitOneWholeEvent( ...
-                            p0,t,t_ups,t_event_prof,'yes','spline',tProf_m);
+                            p0, t, t_ups, t_event_prof, ...
+                            'yes', 'spline', tProf_m);
                         
                         bs_t_prof = out_t_prof.bs;
                         t0_t_prof = out_t_prof.t0;
@@ -203,7 +194,7 @@ if ~isempty(statSparks)
                         % fit
                         out_x_prof = fitOneWholeEvent(...
                             [bs v_max_x-bs w p_max_x*pxSzX-pxSzX],...
-                            x,x_ups,x_event_prof,'no','Gauss',xProf_m);
+                            x, x_ups, x_event_prof, 'no', 'Gauss', xProf_m);
                         
                         % baseline of x profile
                         bs_x_prof = out_x_prof.bs;
@@ -227,10 +218,10 @@ if ~isempty(statSparks)
                             out_t_prof.yFit_ups(peakData_ups.pos);
 
                         eP_profs = getParametersOfEventProfile( ...
-                            t_ups,out_t_prof.yFit_ups,...
-                            x_ups,out_x_prof.yFit_ups,...
-                            bs_t_prof,bs_x_prof,t0_t_prof,...
-                            imgData.blank,peakData_ups,tProf_m_ups);
+                            t_ups, out_t_prof.yFit_ups,...
+                            x_ups, out_x_prof.yFit_ups,...
+                            bs_t_prof, bs_x_prof, t0_t_prof,...
+                            imgData.blank, peakData_ups, tProf_m_ups);
                        
                     catch
                         % get params from image of event
@@ -273,11 +264,37 @@ if ~isempty(statSparks)
                     % use coeficient from previous fitting (t0, tauR, A, baseline)
                     % get params from image of event
                     if ~isempty(t0)
-                        eParamsEst = ...
-                            getParametersOfEventFromRawImage(...
-                            imgE, imgEs, imgE_m, ...
-                            bs, t0, r_m, c_m, ...
-                            t_event_profS, x_event_profS, t, x, imgData);
+                        eParamsEst = getParametersOfEventProfile( ...
+                            t, t_event_profS,...
+                            x, x_event_profS,...
+                            bs, bs, t0,...
+                            imgData.blank, ...
+                            peakData_tProf, tProf_m);
+                        % estimate tauD
+                        try
+                            [~, max_pos_s] = ...
+                                max(t_event_profS(maxCrossProfs.t_event_prof_m));
+                            max_pos_s = max_pos_s - 1 + ... 
+                                find(maxCrossProfs.t_event_prof_m, 1, 'first');
+                            profD = t_event_profS(max_pos_s+1:end);
+                            try
+                                % last 3 points
+                                bs_end = mean(profD(end-2:end)); 
+                            catch
+                                % last point
+                                bs_end = profD(end); 
+                            end
+                            [~, p_tauD] = min( abs( ...
+                                profD - (0.33*(t_event_profS(max_pos_s)-bs_end)+bs_end) ) );
+                            tauD = p_tauD * imgData.pxSzT;
+                        catch
+                            tauD = nan;
+                        end
+                        % eParamsEst = ...
+                        %     getParametersOfEventFromRawImage(...
+                        %     imgE, imgEs, imgE_m, ...
+                        %     bs, t0, r_m, c_m, ...
+                        %     t_event_profS, x_event_profS, t, x, imgData);
                     else
                         eParamsEst = ...
                             getParametersOfEventFromRawImage(...
@@ -333,247 +350,209 @@ if ~isempty(statSparks)
             fontSzL = 16;
             fontSzNum = 14;
             fontSzLegend = 14;
-            
-            switch calcMethod
-                
-                case '2DGauss'
-                    try
-                        %%%%% 2D gauss fit params %%%%%
-                        uicontrol('Style','text','Parent',hf,'Units','normalized',...
-                            'Position', [dx 1-dy 1-2*dx dy],'FontUnits','normalized','FontSize',0.4,...
-                            'FontWeight','bold','HorizontalAlignment','left',...
-                            'String',sprintf('parameters from 2D exponentially modified gaussian fit (%s)',gaussModel));
-                        
-                        %
-                        ha1 = axes(hf,'Units','normalized','Position',[dx 1-h_a-2*dy w_a*1.5 h_a]);
-                        mesh(T,X,imgE,'LineStyle','-','LineWidth',0.5,'FaceColor','none','EdgeColor','k','EdgeAlpha',0.4,'Parent',ha1)
-                        %plot3(T,X,D,'LineStyle','-','Marker','.','Color',[0.1 0.1 0.1],'Parent',ha1)
-                        hold on
-                        surf(T,X,imgE_fit,'FaceAlpha',0.6,'EdgeColor','none','FaceColor','interp','Parent',ha1)
-                        line(t_ups,X_ups(rFitMaxUps,:),t_fit_prof,'Parent',ha1,'LineWidth',3,'Color','k')
-                        line(T_ups(:,cFitMaxUps),x_ups,x_fit_prof,'Parent',ha1,'LineWidth',3,'Color','k')
-                        set(ha1,'XLim',[min(t) max(t)],'YLim',[min(x) max(x)],'ZLim',[min([imgE(:);imgE_fit(:)])*0.95 max([imgE(:);imgE_fit(:)])*1.05])
-                        colormap(jet)
-                        view(-15,40)
-                        set(ha1,'YDir','normal','FontSize',fontSzNum)
-                        title(ha1,sprintf('spark from ROI #: %d -- 2D gauss fit',sparkROInum),'FontSize',fontSzT)
-                        xlabel(ha1,'t (ms)','FontSize',fontSzL)
-                        ylabel(ha1,'x (\mum)','FontSize',fontSzL)
-                        zlabel(hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                  
-                        %
-                        ha2 = axes(hf,'Units','normalized','Position',[ha1.Position(1)+ha1.Position(3)+dx 1-h_a-2*dy w_a h_a]);
-                        line(x,x_data_prof,'Parent',ha2,'LineWidth',1,'Color','k','Display','data')
-                        line(x_ups,x_fit_prof,'Parent',ha2,'LineWidth',2,'Color','r','Display','fit')
-                        set(ha2,'FontSize',fontSzNum)
-                        title(ha2,sprintf('spark from ROI #: %d -- x profile',sparkROInum),'FontSize',fontSzT)
-                        ylabel(ha2,hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                        xlabel(ha2,'x (\mum)','FontSize',fontSzL)
-                        xlim(ha2,[min(x_ups) max(x_ups)])
-                        ylim(ha2,[min([x_data_prof;x_fit_prof])*0.95 max([x_data_prof;x_fit_prof])*1.05])
-                        line([eP_2Dfit.half_max_x_1 eP_2Dfit.half_max_x_2],[eP_2Dfit.half_max_x eP_2Dfit.half_max_x],'Parent',ha2,...
-                            'LineWidth',2,'Color','b','Display','FWHM')
-                        hl_2 = legend(ha2,'show');
-                        hl_2.Location = 'best';
-                        hl_2.FontSize = fontSzLegend;
-                        
-                        %
-                        ha3 = axes(hf,'Units','normalized','Position',[ha2.Position(1)+ha2.Position(3)+dx 1-h_a-2*dy w_a h_a]);
-                        line(t,t_data_prof,'Parent',ha3,'LineWidth',1,'Color','k','Display','data')
-                        line(t_ups,t_fit_prof,'Parent',ha3,'LineWidth',2,'Color','r','Display','fit')
-                        set(ha3,'FontSize',fontSzNum)
-                        title(ha3,sprintf('spark from ROI #: %d -- t profile',sparkROInum),'FontSize',fontSzT)
-                        xlabel(ha3,'t (ms)','FontSize',fontSzL)
-                        ylabel(ha3,hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                        xlim(ha3,[min(t_ups) max(t_ups)])
-                        ylim(ha3,[min([t_data_prof;t_fit_prof])*0.95 max([t_data_prof;t_fit_prof])*1.05])
-                        line([eP_2Dfit.half_max_t_1 eP_2Dfit.half_max_t_2],[eP_2Dfit.half_max_t eP_2Dfit.half_max_t],'Parent',ha3,...
-                            'LineWidth',2,'Color','b','Display','FDHM')
-                        line([eP_2Dfit.t_max eP_2Dfit.t_max],[eP_2Dfit.bs_t eP_2Dfit.v_max],'Parent',ha3,'LineWidth',2,'Color','g','Display','amplitude')
-                        line([eP_2Dfit.t0 eP_2Dfit.t_max],[eP_2Dfit.bs_t eP_2Dfit.bs_t],'Parent',ha3,'LineWidth',2,'Color','m','Display','TTP')
-                        hl_3 = legend(ha3,'show');
-                        hl_3.Location = 'best';
-                        hl_3.FontSize = fontSzLegend;
-                        
-                        %
-                        uicontrol('Style','text','Parent',hf,'Units','normalized',...
-                            'Position', [dx 1-4*dy-h_a-2*dy 1-2*dx 2*dy],'FontUnits','normalized','FontSize',0.25,...
-                            'FontWeight','normal','HorizontalAlignment','left',...
-                            'String',[...
-                            sprintf('parameters of spark from ROI #: (#%d):',sparkROInum),' // ',...
-                            sprintf('amplitude = %0.2f ',eP_2Dfit.amplitude),'(',char(916),'F/F0)',' // ',...
-                            sprintf('TTP = %0.2f (ms)',eP_2Dfit.TTP),' // ',...
-                            sprintf('FDHM = %0.2f (ms)',eP_2Dfit.FDHM),' // ',...
-                            sprintf('FWHM = %0.2f ',eP_2Dfit.FWHM),'(',char(181),'m)',' // ',...
-                            sprintf('sparkMass = %0.2f ',eP_2Dfit.sparkMass),'(',char(916),'F/F0*',char(181),'m^3)' ]);
-                    catch
-                        
-                    end
-                    
-                case 'peakXTProfiles'
-                    try
-                        %%%%% profiles fit params %%%%%
-                        uicontrol('Style','text','Parent',hf,'Units','normalized',...
-                            'Position', [dx 1-dy 1-2*dx dy],'FontUnits','normalized','FontSize',0.4,...
-                            'FontWeight','bold','HorizontalAlignment','left',...
-                            'String','parameters from profiles (1 um and 5 ms wide) crossing peak of event');
-                        %
-                        ha1 = axes(hf,'Units','normalized','Position',[dx 1-h_a-2*dy w_a*1.5 h_a]);
-                        image(imgE,'YData',[min(x_ups) max(x_ups)],'XData',[min(t_ups) max(t_ups)],'CDataMapping','scaled','Parent',ha1)
-                        line(get(gca,'XLim'),[(r_m-1-(n_px_t-1)/2)*pxSzX (r_m-1-(n_px_t-1)/2)*pxSzX],'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        line(get(gca,'XLim'),[(r_m-1+(n_px_t-1)/2)*pxSzX (r_m-1+(n_px_t-1)/2)*pxSzX],'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        
-                        line([(c_m-1-(n_px_x-1)/2)*pxSzT (c_m-1-(n_px_x-1)/2)*pxSzT],get(gca,'YLim'),'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        line([(c_m-1+(n_px_x-1)/2)*pxSzT (c_m-1+(n_px_x-1)/2)*pxSzT],get(gca,'YLim'),'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        set(ha1,'FontSize',fontSzNum)
-                        title(ha1,sprintf('spark from ROI #: %d',sparkROInum),'FontSize',fontSzT)
-                        xlabel(ha1,'t (ms)','FontSize',fontSzL)
-                        ylabel(ha1,'x (\mum)','FontSize',fontSzL)
-                        
-                        %
-                        ha2 = axes(hf,'Units','normalized','Position',[ha1.Position(1)+ha1.Position(3)+dx 1-h_a-2*dy w_a h_a]);
-                        line(x,x_event_prof,'Parent',ha2,'LineWidth',1,'Color','k','Display','data')
-                        line(x_ups,out_x_prof.yFit_ups,'Parent',ha2,'LineWidth',2,'Color','r',...
-                            'Display',sprintf('fit with %s',out_x_prof.fitModel))
-                        set(ha2,'FontSize',fontSzNum)
-                        title(sprintf('spark from ROI #: %d -- x profile',sparkROInum),'FontSize',fontSzT)
-                        ylabel(ha2,hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                        xlabel(ha2,'x (\mum)','FontSize',fontSzL)
-                        xlim(ha2,[min(x_ups) max(x_ups)])
-                        ylim(ha2,[min([x_event_prof;out_x_prof.yFit_ups])*0.95 max([x_event_prof;out_x_prof.yFit_ups])*1.05])
-                        line([eP_profs.half_max_x_1 eP_profs.half_max_x_2],[eP_profs.half_max_x eP_profs.half_max_x],...
-                            'Parent',ha2,'LineWidth',2,'Color','b','Display','FWHM')
-                        hl_2 = legend(ha2,'show');
-                        hl_2.Location = 'best';
-                        hl_2.FontSize = fontSzLegend;
-                        
-                        %
-                        ha3 = axes(hf,'Units','normalized','Position',[ha2.Position(1)+ha2.Position(3)+dx 1-h_a-2*dy w_a h_a]);
-                        line(t,t_event_prof,'Parent',ha3,'LineWidth',1,'Color','k','Display','data')
-                        line(t_ups,out_t_prof.yFit_ups,'Parent',ha3,'LineWidth',2,'Color','r',...
-                            'Display',sprintf('fit with %s',out_t_prof.fitModel))
-                        set(ha3,'FontSize',fontSzNum)
-                        title(ha3,sprintf('spark from ROI #: %d -- t profile',sparkROInum),'FontSize',fontSzT)
-                        xlabel(ha3,'t (ms)','FontSize',fontSzL)
-                        ylabel(ha3,hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                        xlim(ha3,[min(t_ups) max(t_ups)])
-                        ylim(ha3,[min([t_event_prof;out_t_prof.yFit_ups])*0.95 max([t_event_prof;out_t_prof.yFit_ups])*1.05])
-                        line([eP_profs.half_max_t_1 eP_profs.half_max_t_2],[eP_profs.half_max_t eP_profs.half_max_t],...
-                            'Parent',ha3,'LineWidth',2,'Color','b','Display','FDHM')
-                        line([eP_profs.t_max eP_profs.t_max],[eP_profs.bs_t eP_profs.v_max],'Parent',ha3,'LineWidth',2,'Color','g','Display','amplitude')
-                        line([eP_profs.t0 eP_profs.t_max],[eP_profs.bs_t eP_profs.bs_t],'Parent',ha3,'LineWidth',2,'Color','m','Display','TTP')
-                        hl_3 = legend(ha3,'show');
-                        hl_3.Location = 'best';
-                        hl_3.FontSize = fontSzLegend;
-                        
-                        %
-                    
-                        uicontrol('Style','text','Parent',hf,'Units','normalized',...
-                            'Position', [dx 1-4*dy-h_a-2*dy 1-2*dx 2*dy],'FontUnits','normalized','FontSize',0.25,...
-                            'FontWeight','normal','HorizontalAlignment','left',...
-                            'String',[...
-                            sprintf('parameters of spark from ROI #: (#%d):',sparkROInum),' // ',...
-                            sprintf('amplitude = %0.2f ',eP_profs.amplitude),'(',char(916),'F/F0)',' // ',...
-                            sprintf('TTP = %0.2f (ms)',eP_profs.TTP),' // ',...
-                            sprintf('FDHM = %0.2f (ms)',eP_profs.FDHM),' // ',...
-                            sprintf('FWHM = %0.2f ',eP_profs.FWHM),'(',char(181),'m)',' // ',...
-                            sprintf('sparkMass = %0.2f ',eP_profs.sparkMass),'(',char(916),'F/F0*',char(181),'m^3)' ]);
-                        
-                    catch
-                        
-                    end
-                   
-                case 'estimate from event img'
-                    try
-                        if ~strcmp(calcMethod,calcMethodPrev)
-                            eParamsEst = eP_profs;
-                        end
 
-                        %%%%% from raw image params %%%%%
-                        uicontrol('Style','text','Parent',hf,'Units','normalized',...
-                            'Position', [dx 1-dy 1-2*dx dy],'FontUnits','normalized','FontSize',0.4,...
-                            'FontWeight','bold','HorizontalAlignment','left',...
-                            'String', 'parameters from profiles (1 um and 5 ms wide) crossing peak of event (from image smoothed with 2D spline )');
-                        %
-                        ha1 = axes(hf,'Units','normalized','Position',[dx 1-h_a-2*dy w_a*1.5 h_a]);
-                        image(imgE,'YData',[min(x_ups) max(x_ups)],'XData',[min(t_ups) max(t_ups)],'CDataMapping','scaled','Parent',ha1)
-                        line(get(gca,'XLim'),[(r_m-1-(n_px_t-1)/2)*pxSzX (r_m-1-(n_px_t-1)/2)*pxSzX],'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        line(get(gca,'XLim'),[(r_m-1+(n_px_t-1)/2)*pxSzX (r_m-1+(n_px_t-1)/2)*pxSzX],'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        
-                        line([(c_m-1-(n_px_x-1)/2)*pxSzT (c_m-1-(n_px_x-1)/2)*pxSzT],get(gca,'YLim'),'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        line([(c_m-1+(n_px_x-1)/2)*pxSzT (c_m-1+(n_px_x-1)/2)*pxSzT],get(gca,'YLim'),'Parent',ha1,'LineWidth',1,'Color','k',...
-                            'LineStyle','-');
-                        set(ha1,'FontSize',fontSzNum)
-                        title(ha1,sprintf('spark from ROI #: %d',sparkROInum),'FontSize',fontSzT)
-                        xlabel(ha1,'t (ms)','FontSize',fontSzL)
-                        ylabel(ha1,'x (\mum)','FontSize',fontSzL)
-                 
-                        %
-                        ha2 = axes(hf,'Units','normalized','Position',[ha1.Position(1)+ha1.Position(3)+dx 1-h_a-2*dy w_a h_a]);
-                        line(x,x_event_prof,'Parent',ha2,'LineWidth',1,'Color','k','Display','data')
-                        line(x,x_event_profS,'Parent',ha2,'LineWidth',2,'Color','r',...
-                            'Display','profile from image smoothed with 2D spline')
-                        set(ha2,'FontSize',fontSzNum)
-                        title(sprintf('spark from ROI #: %d -- x profile',sparkROInum),'FontSize',fontSzT)
-                        ylabel(ha2,hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                        xlabel(ha2,'x (\mum)','FontSize',fontSzL)
-                        xlim(ha2,[min(x) max(x)])
-                        ylim(ha2,[ min([x_event_prof;x_event_profS])*0.95 ...
-                            max([x_event_prof;x_event_profS])*1.05])
-                        line([eParamsEst.half_max_x_1 eParamsEst.half_max_x_2], ...
-                            [eParamsEst.half_max_x eParamsEst.half_max_x],...
-                            'Parent',ha2,'LineWidth',2,'Color','b','Display','FWHM')
-                        hl_2 = legend(ha2,'show');
-                        hl_2.Location = 'best';
-                        hl_2.FontSize = fontSzLegend;
-                        
-                        %
-                        ha3 = axes(hf,'Units','normalized','Position',[ha2.Position(1)+ha2.Position(3)+dx 1-h_a-2*dy w_a h_a]);
-                        line(t,t_event_prof,'Parent',ha3,'LineWidth',1,'Color','k','Display','data')
-                        line(t,t_event_profS,'Parent',ha3,'LineWidth',2,'Color','r',...
-                            'Display','profile from image smoothed with 2D spline')
-                        set(ha3,'FontSize',fontSzNum)
-                        title(ha3,sprintf('spark from ROI #: %d -- t profile',sparkROInum),'FontSize',fontSzT)
-                        xlabel(ha3,'t (ms)','FontSize',fontSzL)
-                        ylabel(ha3,hObjs.ax_prof.YLabel.String,'FontSize',fontSzL)
-                        xlim(ha3,[min(t) max(t)])
-                        ylim(ha3,[min([t_event_prof;t_event_profS])*0.95 max([t_event_prof;t_event_profS])*1.05])
-                        line([eParamsEst.half_max_t_1 eParamsEst.half_max_t_2],...
-                            [eParamsEst.half_max_t eParamsEst.half_max_t],...
-                            'Parent',ha3,'LineWidth',2,'Color','b','Display','FDHM')
-                        line([eParamsEst.t_max eParamsEst.t_max],...
-                            [eParamsEst.bs eParamsEst.v_max],...
-                            'Parent',ha3,'LineWidth',2,'Color','g','Display','amplitude')
-                        line([eParamsEst.t0 eParamsEst.t_max],[eParamsEst.bs eParamsEst.bs],'Parent',ha3,'LineWidth',2,'Color','m','Display','TTP')
-                        hl_3 = legend(ha3,'show');
-                        hl_3.Location = 'best';
-                        hl_3.FontSize = fontSzLegend;
-                        
-                        %
-                        uicontrol('Style','text','Parent',hf,'Units','normalized',...
-                            'Position', [dx 1-4*dy-h_a-2*dy 1-2*dx 2*dy],'FontUnits','normalized','FontSize',0.25,...
-                            'FontWeight','normal','HorizontalAlignment','left',...
-                            'String',[...
-                            sprintf('parameters of spark from ROI #: (#%d):',sparkROInum),' // ',...
-                            sprintf('amplitude = %0.2f ',eParamsEst.amplitude),'(',char(916),'F/F0)',' // ',...
-                            sprintf('TTP = %0.2f (ms)',eParamsEst.TTP),' // ',...
-                            sprintf('FDHM = %0.2f (ms)',eParamsEst.FDHM),' // ',...
-                            sprintf('FWHM = %0.2f ',eParamsEst.FWHM),'(',char(181),'m)',' // ',...
-                            sprintf('sparkMass = %0.2f ',eParamsEst.sparkMass),'(',char(916),'F/F0*',char(181),'m^3)']);
-                        
+            switch calcMethod
+                case '2DGauss'
+                    txt_a = ['parameters from', ... 
+                        '2D exponentially modified gaussian fit', ... 
+                        sprintf('(%s)',gaussModel)];
+                    x_prof_fit_txt = 'fit';
+                    half_max_x_1 = eP_2Dfit.half_max_x_1;
+                    half_max_x_2 = eP_2Dfit.half_max_x_2;
+                    half_max_x = eP_2Dfit.half_max_x;
+                    t_prof_fit_txt = 'fit';
+                    half_max_t_1 = eP_2Dfit.half_max_t_1;
+                    half_max_t_2 = eP_2Dfit.half_max_t_2;
+                    half_max_t = eP_2Dfit.half_max_t;
+                    t_max = eP_2Dfit.t_max;
+                    bs_t = eP_2Dfit.bs_t;
+                    v_max = eP_2Dfit.v_max;
+                    t0 = eP_2Dfit.t0;
+    
+                case 'peakXTProfiles'
+                    txt_a = ['parameters from profiles',...
+                        '(1 um and 5 ms wide) crossing peak of event'];
+                    x_prof_fit = out_x_prof.yFit_ups;
+                    x_prof_fit_txt = ...
+                        sprintf('fit with %s', out_x_prof.fitModel);
+                    half_max_x_1 = eP_profs.half_max_x_1;
+                    half_max_x_2 = eP_profs.half_max_x_2;
+                    half_max_x = eP_profs.half_max_x;
+                    t_prof_fit = out_t_prof.yFit_ups;
+                    t_prof_fit_txt = ...
+                        sprintf('fit with %s', out_t_prof.fitModel);
+                    half_max_t_1 = eP_profs.half_max_t_1;
+                    half_max_t_2 = eP_profs.half_max_t_2;
+                    half_max_t = eP_profs.half_max_t;
+                    t_max = eP_profs.t_max;
+                    bs_t = eP_profs.bs_t;
+                    v_max = eP_profs.v_max;
+                    t0 = eP_profs.t0;
+                case 'estimate from event img'
+                    txt_a = ['parameters from profiles', ...
+                        '(1 um and 5 ms wide) crossing peak of event',...
+                        '(from image smoothed with 2D spline)'];
+                    x_ups = x;
+                    x_prof_fit = x_event_profS;
+                    x_prof_fit_txt = ...
+                        'profile from image smoothed with 2D spline';
+                    half_max_x_1 = eParamsEst.half_max_x_1;
+                    half_max_x_2 = eParamsEst.half_max_x_2;
+                    half_max_x = eParamsEst.half_max_x;
+                    t_ups = t;
+                    t_prof_fit = t_event_profS;
+                    t_prof_fit_txt = ...
+                        'profile from image smoothed with 2D spline';
+                    half_max_t_1 = eParamsEst.half_max_t_1;
+                    half_max_t_2 = eParamsEst.half_max_t_2;
+                    half_max_t = eParamsEst.half_max_t;
+                    t_max = eParamsEst.t_max;
+                    try 
+                        bs_t = eParamsEst.bs_t;
                     catch
-                        
+                        bs_t = eParamsEst.bs;
                     end
-                    
+                    v_max = eParamsEst.v_max;
+                    t0 = eParamsEst.t0;    
             end
-            
+
+            % 1.text axes
+            ax_txt_a = axes(hf, 'Units','normalized', ...
+                'Position',[dx 1-dy 1-2*dx dy], ...
+                'Visible','off');
+            text(ax_txt_a, 0, 0.5,  txt_a, 'FontUnits','normalized', ...
+                'FontSize',0.4, 'FontWeight','bold', ...
+                'HorizontalAlignment','left')
+            % image axes
+            ha1 = axes(hf, 'Units','normalized', ...
+                'Position',[dx 1-h_a-2*dy w_a*1.5 h_a]);
+            switch calcMethod
+                case '2DGauss'
+                    mesh(T, X, imgE, ...
+                        'LineStyle','-', 'LineWidth',0.5, ...
+                        'FaceColor','none', 'EdgeColor','k', ...
+                        'EdgeAlpha',0.4, 'Parent',ha1)
+                    %plot3(T, X, D, 'LineStyle','-', 
+                    % 'Marker','.', 'Color',[0.1 0.1 0.1], 'Parent',ha1)
+                    hold on
+                    surf(T, X, imgE_fit, ...
+                        'FaceAlpha',0.6, 'EdgeColor','none', ...
+                        'FaceColor','interp', 'Parent',ha1)
+                    line(t_ups, X_ups(rFitMaxUps,:), t_prof_fit, ...
+                        'Parent',ha1, 'LineWidth',3, 'Color','k')
+                    line(T_ups(:,cFitMaxUps), x_ups, x_prof_fit, ...
+                        'Parent',ha1, 'LineWidth',3, 'Color','k')
+                    set(ha1, 'XLim',[min(t) max(t)], ...
+                        'YLim',[min(x) max(x)], ...
+                        'ZLim',getAxisLimits(imgE, 5))
+                    colormap(jet)
+                    view(-15,40)
+                    set(ha1,'YDir','normal', 'FontSize',fontSzNum)
+                    title(ha1, ...
+                        sprintf('spark from ROI #: %d -- 2D gauss fit', ...
+                        sparkROInum), 'FontSize',fontSzT)
+                    xlabel(ha1,'t (ms)', 'FontSize',fontSzL)
+                    ylabel(ha1,'x (\mum)', 'FontSize',fontSzL)
+                    zlabel(hObjs.ax_prof.YLabel.String, 'FontSize',fontSzL)
+                otherwise
+                    image(imgE, 'YData',[min(x_ups) max(x_ups)], ...
+                        'XData',[min(t_ups) max(t_ups)], ...
+                        'CDataMapping','scaled', 'Parent',ha1)
+                    % show lines of areas from where profiles are
+                    % calculated
+                    line(get(gca,'XLim'), ...
+                        [(r_m-1-(n_px_t-1)/2)*pxSzX (r_m-1-(n_px_t-1)/2)*pxSzX], ...
+                        'Parent',ha1, 'LineWidth',1, ...
+                        'Color','k', 'LineStyle','-');
+                    line(get(gca,'XLim'), ...
+                        [(r_m-1+(n_px_t-1)/2)*pxSzX (r_m-1+(n_px_t-1)/2)*pxSzX], ...
+                        'Parent',ha1, 'LineWidth',1, ...
+                        'Color','k', 'LineStyle','-');
+                    line([(c_m-1-(n_px_x-1)/2)*pxSzT (c_m-1-(n_px_x-1)/2)*pxSzT], ...
+                        get(gca,'YLim'), 'Parent',ha1, ...
+                        'LineWidth',1, 'Color','k', 'LineStyle','-');
+                    line([(c_m-1+(n_px_x-1)/2)*pxSzT (c_m-1+(n_px_x-1)/2)*pxSzT], ...
+                        get(gca,'YLim'), 'Parent',ha1, ...
+                        'LineWidth',1, 'Color','k', 'LineStyle','-');
+                    set(ha1, 'FontSize',fontSzNum)
+                    title(ha1, sprintf('spark from ROI #: %d',sparkROInum), ...
+                        'FontSize',fontSzT)
+                    xlabel(ha1,'t (ms)', 'FontSize',fontSzL)
+                    ylabel(ha1,'x (\mum)', 'FontSize',fontSzL)
+            end
+
+            % x-profile axes
+            ha2 = axes(hf, 'Units','normalized', ...
+                'Position',[ha1.Position(1)+ha1.Position(3)+dx ...
+                            1-h_a-2*dy ...
+                            w_a h_a]);
+            line(x, x_event_prof, 'Parent',ha2, ...
+                'LineWidth',1, 'Color','k', 'Display','data')
+            line(x_ups, x_prof_fit, 'Parent',ha2, ...
+                'LineWidth',2, 'Color','r', 'Display',x_prof_fit_txt)
+            set(ha2,'FontSize',fontSzNum)
+            title(ha2, ...
+                sprintf('spark from ROI #: %d -- x profile',sparkROInum), ...
+                'FontSize',fontSzT)
+            ylabel(ha2, hObjs.ax_prof.YLabel.String, 'FontSize',fontSzL)
+            xlabel(ha2, 'x (\mum)', 'FontSize',fontSzL)
+            xlim(ha2, [min(x_ups) max(x_ups)])
+            ylim(ha2, getAxisLimits([x_event_prof(:);x_prof_fit(:)], 5))
+            line([half_max_x_1 half_max_x_2], ...
+                 [half_max_x half_max_x], 'Parent',ha2,...
+                'LineWidth',2, 'Color','b', 'Display','FWHM')
+            hl_2 = legend(ha2,'show');
+            hl_2.Location = 'best';
+            hl_2.FontSize = fontSzLegend;
+           
+            % t-profile axes
+            ha3 = axes(hf, 'Units','normalized', ...
+                'Position',[ha2.Position(1)+ha2.Position(3)+dx ...
+                            1-h_a-2*dy ...
+                            w_a h_a]);
+            line(t, t_event_prof, 'Parent',ha3, ...
+                'LineWidth',1, 'Color','k', 'Display','data')
+            line(t_ups, t_prof_fit, 'Parent',ha3, ...
+                'LineWidth',2, 'Color','r', 'Display',t_prof_fit_txt)
+            set(ha3,'FontSize',fontSzNum)
+            title(ha3, ...
+                sprintf('spark from ROI #: %d -- t profile',sparkROInum), ...
+                'FontSize',fontSzT)
+            xlabel(ha3, 't (ms)', 'FontSize',fontSzL)
+            ylabel(ha3, hObjs.ax_prof.YLabel.String, 'FontSize',fontSzL)
+            xlim(ha3, [min(t_ups) max(t_ups)])
+            ylim(ha3, getAxisLimits([t_event_prof(:);t_prof_fit(:)], 5))
+            line([half_max_t_1 half_max_t_2], ...
+                 [half_max_t half_max_t], 'Parent',ha3,...
+                'LineWidth',2, 'Color','b', 'Display','FDHM')
+            line([t_max t_max], [bs_t v_max], 'Parent',ha3, ...
+                'LineWidth',2, 'Color','g', 'Display','amplitude')
+            line([t0 t_max], [bs_t bs_t], 'Parent',ha3, ...
+                'LineWidth',2, 'Color','m', 'Display','TTP')
+            hl_3 = legend(ha3, 'show');
+            hl_3.Location = 'best';
+            hl_3.FontSize = fontSzLegend;
+
+            % 2.text axes, parameters of analyzed event
+            params_txt = {
+                [sprintf('amplitude = %0.2f',eventParams.amplitude(i,1)), ...
+                ' (',char(916),'F/F0)'],...
+                sprintf('TTP = %0.2f (ms)',eventParams.TTP(i,1)), ...
+                sprintf('FDHM = %0.2f (ms)',eventParams.FDHM(i,1)), ...
+                [sprintf('FWHM = %0.2f ',eventParams.FWHM(i,1)), ...
+                '(',char(181),'m)'],...
+                [sprintf('sparkMass = %0.2f ',eventParams.sparkMass(i,1)), ...
+                '(',char(916),'F/F0*',char(181),'m^3)']};
+            ax_txt_b = axes(hf, 'Units','normalized', ...
+                'Position',[dx 1-4*dy-h_a-2*dy 1-2*dx 2*dy], ...
+                'Visible','off');
+            text(ax_txt_b, 0, 1,  ...
+                [{sprintf('parameters of spark from ROI #%d:',sparkROInum)}, ...
+                join(params_txt, ' // ')], ...
+                'FontUnits','pixels', ...
+                'FontSize',18, 'FontWeight','normal', ...
+                'HorizontalAlignment','left', ...
+                'VerticalAlignment','top')               
         end
         
         % if method for parameters estimation was changed,
@@ -582,12 +561,15 @@ if ~isempty(statSparks)
         % change it back to selected one
         calcMethod = calcMethodPrev;
         
-        clearvars D t x t_prof x_prof t_ups x_ups t_prof_ups x_prof_ups y_t1 y_t2 D1 y_x1 y_x2
+        clearvars D t x t_prof x_prof t_ups x_ups ...
+            t_prof_ups x_prof_ups y_t1 y_t2 D1 y_x1 y_x2
         
-        clearvars rows_e cols_e eP_profs eP_2Dfit out_t_prof out_x_prof p0 t_spark_prof x_spark_prof
+        clearvars rows_e cols_e eP_profs eP_2Dfit ...
+            out_t_prof out_x_prof p0 t_spark_prof x_spark_prof
         
         % Report current estimate in the waitbar's message field
-        waitbar(i/length(statSparks),hw,sprintf('%d %%',round(100*i/length(statSparks))))
+        waitbar(i/length(statSparks), hw, ...
+            sprintf('%d %%',round(100*i/length(statSparks))))
         
     end
     
@@ -609,7 +591,6 @@ end
 % put back pointer to arrow
 set(mainFig,'Pointer','arrow')
 drawnow
-
 
 end
 

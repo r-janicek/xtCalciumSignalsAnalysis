@@ -5,7 +5,7 @@ hObjsA = getappdata(analysisFig,'hObjsA');
 N_events = str2double(hObjsA.h_edit_Npeaks.String);
 pxSzT = mean(diff(t));
 t_ups = (min(t):pxSzT/10:max(t));
-
+keyboard
 paramFit1 = str2double(hObjsA.h_edit_paramFit1.String);
 paramFit2 = str2double(hObjsA.h_edit_paramFit2.String);
 popUpFitFun = hObjsA.popUpMenuEventsFcn; 

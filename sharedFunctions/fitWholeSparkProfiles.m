@@ -19,12 +19,14 @@ y = y(:);
 
 % step in x
 dx = mean(diff(x));
-        
+     
 % options for fmincon
-opt = optimoptions('fmincon','TolFun',1e-9,'TolX',1e-9,'TolCon',1e-9,...
-    'MaxIter',1000,'MaxFunEvals',3000);
-
-
+opt = optimoptions('fmincon', ...
+                   'TolFun',1e-9, ...
+                   'TolX',1e-9, ...
+                   'TolCon',1e-9,...
+                   'MaxIter',1000, ...
+                   'MaxFunEvals',3000);
 
 % do fitting
 switch piecewise

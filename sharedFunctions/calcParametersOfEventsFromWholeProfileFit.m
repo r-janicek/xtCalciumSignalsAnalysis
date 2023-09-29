@@ -3,7 +3,7 @@ function params = calcParametersOfEventsFromWholeProfileFit(x_t,fitData)
 % calculate parameters [t0 (start of event), tPeak (time pos of peak), 
 % Apeak (amplitude of peak), TTP (time to peak), FDHM (full duration in half maximum)] of events from whole profile fit 
 
-
+keyboard
 if isfield(fitData,'t_ups')
     % upscaled time axes
     allEventsFits = cell2mat(fitData.t_ups.individualEventsFits(2:end,:));

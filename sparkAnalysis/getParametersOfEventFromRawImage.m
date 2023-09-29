@@ -38,7 +38,7 @@ imgEs_halfAmpl(imgEs < half_max_img) = 0;
 imgEs_halfAmpl(~imgE_m) = 0;
 
 % get properties of detected, connected objects
-CC_eventsInSparkRegion = bwconncomp(imgEs_halfAmpl,8);
+CC_eventsInSparkRegion = bwconncomp(imgEs_halfAmpl, 8);
 % take that one which has maximum determined before inside
 % this should be maximum of spark which we want to
 % analyze, in case that there are >2 detected
@@ -80,7 +80,7 @@ if isnan(indSpReg)
     return
 end
 
-% rerion of halfMax event
+% region of halfMax event
 eventsInSparkRegion = eventsInSparkRegion(indSpReg);
 
 % final mask of halfMax smoothed image

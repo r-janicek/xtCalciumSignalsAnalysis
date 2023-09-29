@@ -1,10 +1,8 @@
 function baselineCorrection(~,~,main_fig)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
 
 set(getappdata(main_fig,'main_fig'),'Pointer','watch')
 drawnow
-
+keyboard
 % baseline correction
 ImageData = getappdata(main_fig,'Img_data');
 x_t_img = getappdata(main_fig,'xt_img'); 

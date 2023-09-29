@@ -51,7 +51,9 @@ switch hO.String
                           
     case 'transients & waves'
         % add folder with functions needed for analysis
-        addpath(genpath([currentFolder,'/transientWaveAnalysis'])) % add path
+        addpath(genpath(fullfile(wd_path,'/transientWaveAnalysis')))
+        % save type of analysis       
+        setappdata(hf,'analysisType','transients & waves'); 
         % start main window
         MainWindowTansientAndWaves;  
 end 
