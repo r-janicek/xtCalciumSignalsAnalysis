@@ -1,5 +1,6 @@
-function out = multipleEventsFitFcnNormBs(pos_peak,t,y,baselineModel,...
-            fitFun,t_ups,recalculate,mEvents,mBaseline,ax,useWeights,sPP)
+function out = multipleEventsFitFcnNormBs(pos_peak, t, y, ...
+    baselineModel, fitFun, t_ups, recalculate, mEvents, mBaseline, ax,...
+    useWeights, prevFitCoefSpRise)
 
 %tic
 % parameters of function
@@ -15,7 +16,7 @@ function out = multipleEventsFitFcnNormBs(pos_peak,t,y,baselineModel,...
 % mBaseline = mask of baseline
 % ax = handle of axes where final fit will be plotted
 % useWeights
-% sP = starting positions of photolysis
+% prevFitCoefSpRise = coefficients from previous fitting, sparkRise fit [t0,tR,A,y0]
 
 % make column vectors
 t = t(:);
@@ -28,29 +29,30 @@ pos_peak = pos_peak(:);
 % get values of peaks
 val_peak = y(pos_peak);
 
-% remove baseline artefact, fit baseline with polynom or smooth
-[f_baseline,fit_baseline] = fitOfBaseline(t,y,mBaseline,baselineModel);
+% remove baseline artefact, fit baseline with polynom
+[f_baseline, fit_baseline] = fitOfBaseline(t, y, mBaseline, baselineModel);
 fit_baseline = zeros(size(y));
 f_baseline = @(t) zeros(size(t));
 
 % event fit function
-[fun_event,p0,lb,ub,n_coef_event,coeff_n] = setFitFunction(fitFun,N_events,t,val_peak,pos_peak,sPP);
-  
+[fun_event, p0, lb, ub, n_coef_event, coeff_n] = setFitFunction(...
+    fitFun, N_events, t, y, val_peak, pos_peak, prevFitCoefSpRise);
+
 % do fitting
-events_coeff = fitOfData(p0,t,y,n_coef_event,fun_event,N_events,fit_baseline,mEvents,fitFun,ax,useWeights,lb,ub);
+events_coeff = fitOfData(p0, t, y, n_coef_event, fun_event, ...
+    N_events, fit_baseline, mEvents, fitFun, ax, useWeights, lb, ub);
 
 % calculate final fit and fits of events 
-[F,F_events,F_individualEvents] = sumEvents(events_coeff,t,n_coef_event,fun_event,N_events,fit_baseline);
+[F, F_events, F_individualEvents] = sumEventsOutput( ...
+    events_coeff, t, n_coef_event, fun_event, N_events, fit_baseline);
 
-% recalculate baseline with removed fits and repeat fitting procedure with
-% all events and baseline together
-if recalculate
-      
+% recalculate baseline with removed fits and repeat fitting procedure
+if recalculate  
     keyboard
-    
     % do fitting of whole profile at once
-    options = optimoptions('fmincon','TolFun',1e-9,'TolX',1e-9,'TolCon',1e-9,...
-        'MaxIter',1000,'MaxFunEvals',3000,'UseParallel',0,...
+    options = optimoptions('fmincon', ...
+        'TolFun',1e-9, 'TolX',1e-9, 'TolCon',1e-9,...
+        'MaxIter',1000, 'MaxFunEvals',3000, 'UseParallel',0,...
         'OutputFcn',@(x,optimValues,state)outFcnFmincon(x,optimValues,state,ax,t,n_coef_event,fun_event,N_events,fit_baseline));
             
     events_coeff = fmincon(@(p)fitFunSumOfSquaers(p,t,y,n_coef_event,fun_event,N_events,fit_baseline),...
@@ -58,8 +60,7 @@ if recalculate
         @(p)nonlinEq(p,t,fun_event,fitFun,n_coef_event,numel(events_coeff)),options);
     
     % calculate final fit and fits of events 
-    [F,F_events,F_individualEvents] = sumEvents(events_coeff,t,n_coef_event,fun_event,N_events,fit_baseline);
-    
+    [F,F_events,F_individualEvents] = sumEventsOutput(events_coeff,t,n_coef_event,fun_event,N_events,fit_baseline);
 end
 
 % create final output structure
@@ -67,28 +68,30 @@ events_n = num2cell(zeros(1,N_events));
 coefficientsOfEvents = zeros(N_events,n_coef_event);
 for i=1:N_events
     events_n(1,i) = {sprintf('event %d',i)};
-    coefficientsOfEvents(i,:) = events_coeff( 1+(i-1)*n_coef_event : n_coef_event+(i-1)*n_coef_event );
+    coefficientsOfEvents(i,:) = events_coeff( ...
+        1+(i-1)*n_coef_event : n_coef_event+(i-1)*n_coef_event );
 end
 
 out.t = t;
 out.wholeFit = F;
 out.allEventsFit = F_events;
 out.baselineFit = fit_baseline;
-out.individualEventsFits = [ events_n ; num2cell(F_individualEvents) ];
-out.coefficientsOfFittedEvents = [[{''},coeff_n];[events_n',num2cell(coefficientsOfEvents)]];
+out.individualEventsFits = [events_n ; num2cell(F_individualEvents)];
+out.coefficientsOfFittedEvents = [ [{''},coeff_n]; ...
+    [events_n',num2cell(coefficientsOfEvents)] ];
 out.eventModel = fitFun;
-out.bs = median(fit_baseline);
-out.t0 = [];
-
 
 if exist('t_ups', 'var')
     t_ups = t_ups(:);
     % evaluate events with different time axes
-    [F_ups,F_events_ups,F_individualEvents_ups] = sumEvents(events_coeff,t_ups,n_coef_event,fun_event,N_events,feval(f_baseline,t_ups));
+    [F_ups, F_events_ups, F_individualEvents_ups] = ...
+        sumEventsOutput(events_coeff, t_ups, n_coef_event, fun_event, ...
+        N_events, feval(f_baseline,t_ups));
     out.t_ups.wholeFit = F_ups;
     out.t_ups.allEventsFit = F_events_ups;
-    out.t_ups.baselineFit = feval(f_baseline,t_ups);
-    out.t_ups.individualEventsFits = [ events_n ; num2cell(F_individualEvents_ups) ];
+    out.t_ups.baselineFit = feval(f_baseline, t_ups);
+    out.t_ups.individualEventsFits = [events_n; ...
+        num2cell(F_individualEvents_ups)];
     out.t_ups.t_ups = t_ups;
 end
 
@@ -120,7 +123,6 @@ function events_coeff = fitOfData(p0,t,y,n_coef_event,fun_event,N_events,fit_bas
 a = 1;
 ind = 1;
 
-
 while ind < numel(t)
     
     try
@@ -142,7 +144,7 @@ end
 % fit individual masked events
 events_coeff = zeros(size(p0));
 for i=1:numel(s)
-    
+
     indx = ismember(p0,t(s(i):e(i)));
     indx = reshape(indx,[n_coef_event,N_events]);
     
@@ -178,8 +180,8 @@ for i=1:numel(s)
 
     %%%%% do fitting    
     options = optimoptions('fmincon','TolFun',1e-12,'TolX',1e-12,'TolCon',1e-12,...
-        'MaxIter',1000,'MaxFunEvals',3000,'UseParallel',0,'Display','none',...
-        'OutputFcn',@(x,optimValues,state)outFcnFmincon(x,optimValues,state,ax,tp,n_coef_event,fun_event,N_events_part,bp));
+        'MaxIter',1000,'MaxFunEvals',3000,'UseParallel',false,'Display','none',...
+        'OutputFcn',''); % @(x,optimValues,state)outFcnFmincon(x,optimValues,state,ax,tp,n_coef_event,fun_event,N_events_part,bp));
    
     events_coeff(p0_mask) = fmincon(@(p)fitFunSumOfSquaersW(p,tp,yp,n_coef_event,fun_event,N_events_part,bp,wE),...
         p0(p0_mask),[],[],[],[],lb(p0_mask),ub(p0_mask),...
@@ -202,11 +204,11 @@ end
 
 
 % set fit function
-function [fun_event,p0,lb,ub,n_coef_event,coeff_n] = setFitFunction(fitFun,N_events,t,val_peak,pos_peak,sPP)
+function [fun_event,p0,lb,ub,n_coef_event,coeff_n] = ...
+    setFitFunction(fitFun,N_events,t,y,val_peak,pos_peak,prevFitCoefSpRise)
 
 switch fitFun
-    
-    
+
     case 'expModGauss'
         % function from: chromatography journal
         % convolution of CDF of normal distribution and exponential decay function       
@@ -229,70 +231,19 @@ switch fitFun
             p0(4 + (i-1)*n_coef_event) = 20;           
         
         end
-        
-        
-    case 'expModGaussPiecewise'
-        % function from: chromatography journal
-        % convolution of CDF of normal distribution and exponential decay function
-        % coefficients: [t0,A,m,sd,tau]
-        fun_event = @(p,t) (t<p(1)).*0 + (t>=p(1)).*(p(2).*exp(p(3)/p(5) + p(4)^2/(2*p(5)^2) - t./p(5)).*cdf('Normal',t,p(3)+(p(4)^2/p(5)),p(4)));
-        
-        n_coef_event = 5;
-        coeff_n = {'t0','A','m','sd','tauD'};
-                
-        p0 = zeros(1,N_events*n_coef_event);
-        lb = zeros(1,N_events*n_coef_event);
-        ub = inf(1,N_events*n_coef_event);
-        d = zeros(1,N_events*n_coef_event);
-        
-        
-        for i=1:N_events
-            
-            % lower bounds
-            if sPP(i) > 2
-                lb(1 + (i-1)*n_coef_event) = t(sPP(i)-2);                 
-            end
-                     
-            try                        
-                d(i) = (pos_peak(i) - pos_peak(i-1));
-            catch
-                d(i) = pos_peak(i);
-            end
-            
-            if (pos_peak(i) - d(i)) < sPP(i)
-               d(i) = pos_peak(i) - sPP(i);
-            end
-                       
-            if d(i)*mean(diff(t)) > 30
-                d(i) = 30;
-            end
-                      
-            % estimation of SD of event
-            sdE = d(i)/20;
-            
-            p0(1 + (i-1)*n_coef_event) = t(pos_peak(i))-5*sdE;
-            p0(2 + (i-1)*n_coef_event) = val_peak(i);
-            p0(3 + (i-1)*n_coef_event) = t(pos_peak(i));
-            p0(4 + (i-1)*n_coef_event) = sdE;
-            p0(5 + (i-1)*n_coef_event) = 3*sdE;
-            
-            
-                        
-        end
-      
-%                  figure
-%          plot(t,fun_event(p0(6:10),t),'or')
-%          hold on 
-%          plot(t,fun_event(p0(11:15),t),'sb')
-%         
+          
              
     case '1expR1expD'    
         % Lacampagne et al, 1999
-        % coefficients: [t0, tmax, tauR, A, tauD]        
+        % coefficients: [t0, tmax, tauR, A, tauD] 
+        % piecewise
+%         fun_event = @(p,t) (t<p(1)).*0 + ...
+%                            (t>=p(1) & t<=p(2)).*( (1-exp(-(t-p(1))./p(3))).*p(4) ) + ...
+%                            (t>p(2)).*( p(4).*(1-exp(-(p(2)-p(1))./p(3))).*exp(-(t-p(2))./p(5)) );
+        
         fun_event = @(p,t) (t<p(1)).*0 + ...
-                           (t>=p(1) & t<=p(2)).*( (1-exp(-(t-p(1))./p(3))).*p(4) ) + ...
-                           (t>p(2)).*( p(4).*(1-exp(-(p(2)-p(1))./p(3))).*exp(-(t-p(2))./p(5)) );
-               
+                           (t>=p(1)).*( (1-exp(-(t-p(1))./p(3))).*p(4) ) .* exp(-(t-p(2))./p(5));               
+                       
         n_coef_event = 5;
         coeff_n = {'t0','tmax','tauR','Ampl','tauD'};
         
@@ -302,14 +253,13 @@ switch fitFun
         
         for i=1:N_events
             
-            p0(1 + (i-1)*n_coef_event) = t(pos_peak(i))-5;
+            [~,t0] = min( abs(t-prevFitCoefSpRise(i,1)) );
+            
+            p0(1 + (i-1)*n_coef_event) = t(t0);
             p0(2 + (i-1)*n_coef_event) = t(pos_peak(i));
             p0(3 + (i-1)*n_coef_event) = 5;
             p0(4 + (i-1)*n_coef_event) = val_peak(i);
             p0(5 + (i-1)*n_coef_event) = 15;
-            if sPP(i) > 2
-                lb(1 + (i-1)*n_coef_event) = t(sPP(i)-2);
-            end
         end
         
            
@@ -321,27 +271,25 @@ switch fitFun
                
         n_coef_event = 6;
         coeff_n = {'t0','tmax','tauR','Ampl','tauD1','tauD2'};
- 
+        
         p0 = zeros(1,N_events*n_coef_event);
         lb = zeros(1,N_events*n_coef_event);
         ub = inf(1,N_events*n_coef_event);
         
         for i=1:N_events
             
-            p0(1 + (i-1)*n_coef_event) = t(pos_peak(i))-5;
+            [~,t0] = min( abs(t-prevFitCoefSpRise(i,1)) );
+            
+            p0(1 + (i-1)*n_coef_event) = t(t0);
             p0(2 + (i-1)*n_coef_event) = t(pos_peak(i));
             p0(3 + (i-1)*n_coef_event) = 5;
             p0(4 + (i-1)*n_coef_event) = val_peak(i);
             p0(5 + (i-1)*n_coef_event) = 10;
             p0(6 + (i-1)*n_coef_event) = 20;
-            if sPP(i) > 2
-                lb(1 + (i-1)*n_coef_event) = t(sPP(i)-2);   
-            end
         end
       
         
     case 'CaSpikeFun'
-        
         %coefficients: [t0, FM, tA, tI, FI]  
         fun_event = @(p,t) (t < p(1)) .* 0 + ...
                            (t >= p(1)) .* (0 + (p(2)*((-3*p(3)*(2 + (-1 + p(5))*p(3))*(4*p(3) - 7*p(4))*(p(3) - 3*p(4)))./(2*exp((2*(t-p(1)))/p(3)))+...
@@ -360,26 +308,27 @@ switch fitFun
         n_coef_event = 5;
         coeff_n = {'t0','FM','tauR','tauD','FI'};    
         
+        % prevFitCoefSpRise: sparkRise [t0,tR,A,y0]
+        
         p0 = zeros(1,N_events*n_coef_event);
         lb = zeros(1,N_events*n_coef_event);
         ub = inf(1,N_events*n_coef_event);
-          
+        
         for i=1:N_events
-           
-            p0(1 + (i-1)*n_coef_event) = t(pos_peak(i));
+            
+            [~,t0] = min( abs(t-prevFitCoefSpRise(i,1)) );
+            
+            p0(1 + (i-1)*n_coef_event) = t(t0);
             p0(2 + (i-1)*n_coef_event) = val_peak(i);
             p0(3 + (i-1)*n_coef_event) = 3;
-            p0(4 + (i-1)*n_coef_event) = 9;
+            p0(4 + (i-1)*n_coef_event) = 5;
             p0(5 + (i-1)*n_coef_event) = 1;
-            if sPP(i) > 2
-                lb(1 + (i-1)*n_coef_event) = t(sPP(i)-2);  
-            end
-            
+
             lb(5 + (i-1)*n_coef_event) = 1;  
             ub(5 + (i-1)*n_coef_event) = 1;      
                                   
         end
-                                      
+   
 end
 
 end
@@ -387,7 +336,30 @@ end
 
 % sum N_events together using chosen function and proper initial
 % parameters
-function [F,F_events,F_individualEvents] = sumEvents(p,t,n_coef_event,fun_event,N_events,fit_baseline)
+function [F,F_events,F_individualEvents] = sumEvents(p,t, ...
+    n_coef_event,fun_event,N_events,fit_baseline)
+
+F_events = zeros(numel(t),1);
+F_individualEvents = zeros(numel(t),N_events);
+for j=1:N_events
+    
+    F_event = fun_event(p(1+(j-1)*n_coef_event:n_coef_event+(j-1)*n_coef_event),t);
+    %F_event(~isfinite(F_event))=0;
+    
+    F_events = F_events + F_event;
+    F_individualEvents(:,j) = F_event;
+    
+end
+
+F = F_events + fit_baseline;
+
+end
+
+% OUTPUT, change NaNs to zeros 
+% sum N_events together using chosen function and proper initial
+% parameters
+function [F,F_events,F_individualEvents] = sumEventsOutput(p,t, ...
+    n_coef_event,fun_event,N_events,fit_baseline)
 
 F_events = zeros(numel(t),1);
 F_individualEvents = zeros(numel(t),N_events);
@@ -404,6 +376,7 @@ end
 F = F_events + fit_baseline;
 
 end
+
 
 
 % fit function to use with fminsearch, fmincon; function returning

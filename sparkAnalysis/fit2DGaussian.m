@@ -1,6 +1,6 @@
 function out = fit2DGaussian( ...
-    X,Y,X_ups,Y_ups,imgE,imgE_m,peakPos,model)
-
+    X, Y, X_ups, Y_ups, imgE, imgE_m, peakPos, model)
+keyboard
 % X,Y,imgE = matrices
 % imgE_m = mask of imgE, of detected event
 % peakPos = pos of peak(row (y or spatial axis),column (x or time axis)) in D

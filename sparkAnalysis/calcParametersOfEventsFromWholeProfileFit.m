@@ -22,8 +22,10 @@ for i = 1:size(allEventsFits,2)
     
     % single event
     eventFit = allEventsFits(:,i);
-    
-    % calculate time params of single event
+    keyboard
+    % calculate time parameters of single event
+    getParametersOfEventProfile
+
     % position and value of peak
     [val_t,pos_t] = max(eventFit);
     

@@ -1,5 +1,5 @@
-function bsFit = fitBaseline(t,y,type,mBs,plotResult,ax)
-%keyboard
+function bsFit = fitBaseline(t, y, type, mBs, plotResult, ax)
+keyboard
 % t = time
 % y = profile
 % type = type of function

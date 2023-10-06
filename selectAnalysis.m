@@ -5,7 +5,7 @@ switch hO.String
         addpath(genpath(fullfile(wd_path,'sparkAnalysis'))) % add path
         % start main window
         MainWindowSparksAndProfiles('spark detection');
-        hf = findall(0,'tag','sparkAnalysis');
+        hf = findall(0,'tag','spark detection');
         % save type of analysis       
         setappdata(hf,'analysisType','spark detection'); 
         % set SparkAnalysis window  
@@ -21,7 +21,7 @@ switch hO.String
         addpath(genpath(fullfile(wd_path,'sparkAnalysis'))) % add path
         % start main window
         MainWindowSparksAndProfiles('spark recovery ryanodine');
-        hf = findall(0,'tag','sparkAnalysis');
+        hf = findall(0,'tag','spark recovery ryanodine');
         % save type of analysis       
         setappdata(hf,'analysisType','spark recovery ryanodine');       
         % setup SparkAnalysis window  
@@ -52,10 +52,11 @@ switch hO.String
     case 'transients & waves'
         % add folder with functions needed for analysis
         addpath(genpath(fullfile(wd_path,'/transientWaveAnalysis')))
+        % start main window
+        MainWindowTansientAndWaves;
+        hf = findall(0, 'Type','figure', 'Tag','transients & waves');
         % save type of analysis       
         setappdata(hf,'analysisType','transients & waves'); 
-        % start main window
-        MainWindowTansientAndWaves;  
 end 
 
 % close window for analysis selection

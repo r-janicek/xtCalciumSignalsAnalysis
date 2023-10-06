@@ -1,4 +1,4 @@
-function plotROIprofile(h_rect_prof_pos,mainFig)
+function plotROIprofile(profROI, ~, mainFig)
 
 set(mainFig,'Pointer','watch')
 drawnow
@@ -11,51 +11,32 @@ analysisType = getappdata(mainFig,'analysisType');
 
 % get image data
 switch analysisType
-    
     case 'spark recovery ryanodine'
-        img = imgData.imgDataXTfluoFN;
-        
+        img = imgData.imgDataXTfluoFN; 
     case 'spark recovery photolysis'
-        img = imgData.imgDataXTfluoF;
-        
+        img = imgData.imgDataXTfluoF; 
     otherwise
-        img = imgData.imgDataXTfluoFN;
-        
+        img = imgData.imgDataXTfluoFN;   
 end
-
+% px size
 pxSzT = imgData.pxSzT;
 pxSzX = imgData.pxSzX;
 t = imgData.t;
 
 ax_img_sparks = hObjs.ax_img_sparks;
-%ax_img_sparks_2 = hObjs.ax_img_sparks_2;
 crit = str2double(get(hObjs.h_edit_tresh_prof,'String'));
 smooth_span = str2double(get(hObjs.h_smooth_edit,'String'));
 bs_crit = str2double(get(hObjs.h_bsDet_edit,'String'));
-
 ax_prof = hObjs.ax_prof;
-h_rect_prof = profileAnalysis.h_rect_prof;
 
-% get area of image for profile
-% h_y_link = hObjs.hlink2;
-% h_y_link.removetarget(ax_img_sparks)
-
-h_rect_prof_pos = [floor(h_rect_prof_pos(1)) round(h_rect_prof_pos(2)) h_rect_prof_pos(3) h_rect_prof_pos(4)];
-
-h_rect_prof_pos(1) = t(1);
-h_rect_prof_pos(3) = t(end);
-
-h_rect_prof.setPosition(h_rect_prof_pos)
-%setappdata(main_fig,'h_rect_prof',h_rect_prof);
-
-ROI_pos = [h_rect_prof_pos(1)/pxSzT h_rect_prof_pos(2) h_rect_prof_pos(3)/pxSzT+1 h_rect_prof_pos(4)];
-
-ROI_pos(ROI_pos<0)=0;
-
-[~,r_x(:,1)] = rect2ind(ROI_pos);
-
-cropRoi = img(r_x,:); % crop from data for selected analysis 
-cropRoiR = imgData.imgDataXTfluoR(r_x,:); % crop from raw data
+% create ROI mask
+profROI_m = createMask(profROI);
+r_t = find(any(profROI_m, 1));
+r_x = find(any(profROI_m, 2));
+% crop from data for selected analysis
+cropRoi = img(r_x,:);
+% crop from raw data
+cropRoiR = imgData.imgDataXTfluoR(r_x,:); 
 
 y_px = linspace(1,size(cropRoi,1),size(cropRoi,1));
 y_um = linspace(0,(size(cropRoi,1)-1)*pxSzX,size(cropRoi,1));
@@ -86,16 +67,18 @@ set(ax_img_sparks,'XTick',[],'FontSize',14,'YDir','reverse','YAxisLocation','lef
 
 % set and add interactive scale
 sc_num = (diff(ax_img_sparks.YLim)*pxSzX)/2; % in um
-hObjs.h_txt_scale.String = [sprintf('%0.2f',sc_num),' \mum'];
+hObjs.h_txt_scale_sparks.String = [sprintf('%0.2f',sc_num),' \mum'];
 editScaleListener = addlistener(ax_img_sparks, 'YLim', 'PostSet', ...
     @(varargin)scaleLineChange(varargin,mainFig));
-setappdata(mainFig,'editScaleListener',editScaleListener)
+setappdata(mainFig,'editScaleListener_sparks',editScaleListener)
 
 % show borders of area taken for average profile
-line([t(1) t(end)],[c c],'Parent',ax_img_sparks,'LineWidth',3,'Color','k','LineStyle','-')
-line([t(1) t(end)],[c-((n_px-1)/2) c-((n_px-1)/2)],'Parent',ax_img_sparks,'LineWidth',2,'Color','k','LineStyle',':')
-line([t(1) t(end)],[c+((n_px-1)/2) c+((n_px-1)/2)],'Parent',ax_img_sparks,'LineWidth',2,'Color','k','LineStyle',':')
-
+line([t(1) t(end)],[c c], 'Parent',ax_img_sparks, ...
+    'LineWidth',3, 'Color','k', 'LineStyle','-')
+line([t(1) t(end)],[c-((n_px-1)/2) c-((n_px-1)/2)], ...
+    'Parent',ax_img_sparks, 'LineWidth',2, 'Color','k', 'LineStyle',':')
+line([t(1) t(end)],[c+((n_px-1)/2) c+((n_px-1)/2)], ...
+    'Parent',ax_img_sparks, 'LineWidth',2, 'Color','k', 'LineStyle',':')
 
 if isfield(imgData,'szImgs')
     if ~isempty(imgData.szImgs)
@@ -182,7 +165,7 @@ else
     
     %find individuals events
     try
-        statEvents = findEvents(mainFig,cropRoiR);
+        statEvents = findEvents(mainFig, cropRoiR);
     catch
         statEvents = [];
     end
@@ -190,87 +173,65 @@ else
     % remove events which bounding boxes are not crossing center lines
     try
         lines_px_r = (c-((n_px-1)/2):c+((n_px-1)/2));
-        events_px_r = arrayfun(@(x) x.SubarrayIdx{1,1},statEvents,'UniformOutput',0);
-        m_center = cellfun(@(x) any(ismember(lines_px_r,x)),events_px_r,'UniformOutput',1);
+        events_px_r = arrayfun(@(x) x.SubarrayIdx{1,1}, statEvents, ...
+            'UniformOutput',0);
+        m_center = cellfun(@(x) any(ismember(lines_px_r,x)), events_px_r, ...
+            'UniformOutput',1);
         statEvents(~m_center) = [];
     catch
         statEvents = [];
     end
     
     % find centre of the event
-    pos_centre_x = arrayfun(@(x) x.WeightedCentroid(1,1),statEvents,'UniformOutput',1);
-    pos_centre_y = round(arrayfun(@(x) x.WeightedCentroid(1,2),statEvents,'UniformOutput',1));
-    
-    %pos_max = num2cell([pos_centre_y,pos_centre_x],2);
-    
+    pos_centre_x = arrayfun(@(x) x.WeightedCentroid(1,1), statEvents, ...
+        'UniformOutput',1);
+    pos_centre_y = round(arrayfun(@(x) x.WeightedCentroid(1,2), statEvents, ...
+        'UniformOutput',1));
+    col = zeros(length(statEvents), 1);
     for i = 1:length(statEvents)
-        
         event = cropRoi(statEvents(i).PixelIdxList);
         [~,p_m] = max(event);
         px = statEvents(i).PixelIdxList;
         
         col(i,1) = ceil(px(p_m)/size(cropRoi,1));
-        row = rem(px(p_m),size(cropRoi,1));
-        
+        % row(i,1) = rem(px(p_m),size(cropRoi,1)); 
     end
     
     try
-        pos_max = num2cell([pos_centre_y,col],2);
+        pos_max = num2cell([pos_centre_y, col],2);
     catch
         pos_max = [];
     end
     
     % show centre and boundary rectangle of detected events
     for i=1:length(statEvents)
-        
         % bounding rectangle
         pos = statEvents(i).BoundingBox;
-        eventRec = rectangle('Position',[pos(1)*pxSzT pos(2) pos(3)*pxSzT pos(4)],...
-            'Parent',ax_img_sparks,'EdgeColor','r','LineStyle',':',...
-            'LineWidth',2,'Tag',num2str(i));
-        
+        eventRec = rectangle( ...
+            'Position',[pos(1)*pxSzT pos(2) pos(3)*pxSzT pos(4)],...
+            'Parent',ax_img_sparks, 'EdgeColor','r', 'LineStyle',':',...
+            'LineWidth',2, 'Tag',num2str(i));
         % centre line
         centre = pos_max{i};
-        centreLine = line([centre(2)*pxSzT-pxSzT centre(2)*pxSzT-pxSzT],[centre(1) centre(1)],...
-            'Parent',ax_img_sparks,'Color','r','LineStyle','none',...
-            'Marker','+','MarkerSize',20,'LineWidth',3,'PickableParts','all',...
-            'ButtonDownFcn',{@profileROIButtonDownFcn,mainFig});
-        
+        centreLine = line( ...
+            [centre(2)*pxSzT-pxSzT centre(2)*pxSzT-pxSzT], ...
+            [centre(1) centre(1)],...
+            'Parent',ax_img_sparks, 'Color','r', 'LineStyle','none',...
+            'Marker','+', 'MarkerSize',20, 'LineWidth',3, ...
+            'PickableParts','all',...
+            'ButtonDownFcn',{@profileROIButtonDownFcn, mainFig});
         [statEvents(i).centreLine] = centreLine;
-        [statEvents(i).eventRec] = eventRec;
-        
+        [statEvents(i).eventRec] = eventRec;    
     end
     
-    % take area for averaging, calculating time profile
+    % take area for averaging and calculate time profile
     cropProf = cropRoi(c-((n_px-1)/2):c+((n_px-1)/2),:);
-    prof_t(:,1) = mean(cropProf,1);
-    
+    prof_t(:,1) = mean(cropProf, 1);
     cropProfR = cropRoiR(c-((n_px-1)/2):c+((n_px-1)/2),:);
-    % prof_t(:,1) = mean(cropProfR,1);
-    
     profileAnalysis.croppedDataProfile = cropProf;
     profileAnalysis.croppedDataProfileR = cropProfR;
     
     % smooth profile with loess with defined duration in ms
-    
-    % %%%%%%%% cross validation, slow
-    % nn = 500;
-    % spans = linspace(0.0001,0.25,nn);
-    % sse = zeros(size(spans));
-    % cp = cvpartition(length(prof_t),'k',2);
-    %
-    % for i = 1:numel(spans)
-    %
-    %     f = @(train,test) norm(test(:,2) - mylowess(train,test(:,1),spans(i)))^2;
-    %     sse(i) = sum( crossval(f,[t',prof_t],'partition',cp) );
-    %     i
-    % end
-    %
-    % [minsse,minj] = min(sse);
-    % span = spans(minj);
-    %
-    % %%%%%%%%
-    
     n_pts = round(smooth_span/pxSzT);
     prof_t_s = smooth(prof_t,n_pts/length(prof_t),'loess');
     
@@ -282,7 +243,6 @@ else
     mpp = 2*noise_std; % minimum peak prominence
     
     if max(prof_t) > mph
-        
         [pks,locs] = findpeaks(prof_t,t,'MinPeakHeight',mph,...
             'MinPeakWidth',mpw,...
             'MinPeakDistance',mpd,...
@@ -290,9 +250,9 @@ else
     end
     
     % plot profile
-    pp = plot(t,prof_t,t,prof_t_s,'Parent',ax_prof);
+    pp = plot(t,prof_t, t,prof_t_s, 'Parent',ax_prof);
     set(pp(1),'Color','k')
-    set(pp(2),'Color','b','LineStyle','-')
+    set(pp(2),'Color','b', 'LineStyle','-')
     
     if exist('oldXlim', 'var')
         xlim(ax_prof,[oldXlim(1) oldXlim(2)])
@@ -301,46 +261,44 @@ else
     end
     ylim(ax_prof,[min(prof_t) max(prof_t)*1.1])
     set(ax_prof,'FontSize',14)
-    
+    % set callback function
     set([ax_prof; pp], 'buttondownfcn', {@profileROIButtonDownFcn,mainFig})
     
-    % scale circles
+    % scale size of circles
     scSz = get(0,'screensize');
     cSz = (min(scSz(3),scSz(4))/1440)*60;
-    
     % plot detected peaks in profile
     if exist('pks','var')
         if ~isempty(pks)
-            
             h_circ = zeros(length(pks),1);
             for i=1:length(pks)
-                
                 % plot detected peaks
-                h_circ(i,1) = line(locs(i),pks(i),'Parent',ax_prof,'Color','r',...
-                    'LineStyle','none','Marker','.','MarkerSize',cSz,'PickableParts','all',...
+                h_circ(i,1) = line(locs(i), pks(i), ...
+                    'Parent',ax_prof, 'Color','r',...
+                    'LineStyle','none', 'Marker','.', ...
+                    'MarkerSize',cSz, 'PickableParts','all',...
                     'ButtonDownFcn',{@profileROIButtonDownFcn,mainFig});
-                
             end
-         
             % fit sparks and plot results
-            [h_line,detectedEventsMask,coef,~,startOfSpark,endOfSpark] = fitSparkRise(pxSzT,t,prof_t,pks,locs,ax_prof,[],1e-3,400,smooth_span,bs_crit,[],[]);
-            
-            
+            [h_line, detectedEventsMask, coef, ~, startOfSpark, endOfSpark] = ...
+                fitSparkRise(pxSzT, t, prof_t, pks, locs, ax_prof, ...
+                             [], 1e-3, 400, smooth_span, bs_crit, [], []);
         end
         
     end
     
-    
     % set correct axis labels
-    if isfield(imgData,'norm_flag') && imgData.norm_flag==1 && strcmp(analysisType,'spark recovery ryanodine')
-        
-        set(get(ax_prof,'Xlabel'),'String','t (ms)','FontWeight','bold')
-        set(get(ax_prof,'Ylabel'),'String',['fluorescence ' '(',char(916),'F/F0)'],'FontWeight','bold')
-        
+    if isfield(imgData,'norm_flag') && ...
+            imgData.norm_flag==1 && ...
+            strcmp(analysisType,'spark recovery ryanodine')
+        set(get(ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
+        set(get(ax_prof,'Ylabel'), ...
+            'String',['fluorescence ' '(',char(916),'F/F0)'], ...
+            'FontWeight','bold') 
     else
-        set(get(ax_prof,'Xlabel'),'String','t (ms)','FontWeight','bold')
-        set(get(ax_prof,'Ylabel'),'String','fluorescence (F)','FontWeight','bold')
-        
+        set(get(ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
+        set(get(ax_prof,'Ylabel'), 'String','fluorescence (F)', ...
+            'FontWeight','bold') 
     end
     
     % save data
@@ -372,55 +330,8 @@ else
     
 end
 
-
 set(mainFig,'Pointer','arrow')
 drawnow
-
-
-
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%
-function ys=mylowess(xy,xs,span)
-%MYLOWESS Lowess smoothing, preserving x values
-%   YS=MYLOWESS(XY,XS) returns the smoothed version of the x/y data in the
-%   two-column matrix XY, but evaluates the smooth at XS and returns the
-%   smoothed values in YS.  Any values outside the range of XY are taken to
-%   be equal to the closest values.
-
-if nargin<3 || isempty(span)
-    span = .3;
-end
-
-% Sort and get smoothed version of xy data
-xy = sortrows(xy);
-x1 = xy(:,1);
-y1 = xy(:,2);
-ys1 = smooth(x1,y1,span,'loess');
-
-% Remove repeats so we can interpolate
-mt = diff(x1)==0;
-x1(mt)=[]; ys1(mt) = [];
-
-% Interpolate to evaluate this at the xs values
-ys = interp1(x1,ys1,xs,'linear',NaN);
-
-% Some of the original points may have x values outside the range of the
-% resampled data.  Those are now NaN because we could not interpolate them.
-% Replace NaN by the closest smoothed value.  This amounts to extending the
-% smooth curve using a horizontal line.
-if any(isnan(ys))
-    ys(xs<x1(1)) = ys1(1);
-    ys(xs>x1(end)) = ys1(end);
-end
-
-end
-
-
-
 
 end
 

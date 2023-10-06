@@ -1,20 +1,10 @@
-
-%% add paths of folders containing functions for loading image, save figures
-% and save xls files, also load Igor waves
-currentFolder = pwd;
-expression = 'Matlab';
-splitStr = regexp(currentFolder,expression,'split');
-
-addpath([splitStr{1,1},'Matlab','/OME_bioformats'])
-addpath([splitStr{1,1},'Matlab','/createXLSonMAC'])
-addpath([splitStr{1,1},'Matlab','/export_fig'])
-addpath([splitStr{1,1},'Matlab','/Igor2Matlab'])
-
-
 %% create main figure and axes   
-mainFig = figure('Name','transients and waves analysis','units','normalized','outerposition',[0 0.05 1 0.95]);
-set(mainFig, 'PaperPositionMode','auto','PaperOrientation',...
-              'landscape','PaperType','A4','Tag','transients and waves analysis');
+mainFig = figure('Name','transients and waves analysis', ...
+    'units','normalized', 'outerposition',[0 0.05 1 0.95]);
+set(mainFig, 'PaperPositionMode','auto', ...
+             'PaperOrientation','landscape', ...
+             'PaperType','A4', ...
+             'Tag','transients & waves');
          
 % create axes
 ax_img = axes('Parent',mainFig);

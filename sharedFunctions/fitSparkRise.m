@@ -1,6 +1,7 @@
-function [h_line,detectedEventsMask,coef,sp_fit,startOfSpark,endOfSpark] = ...
-    fitSparkRise(pxSz_t,x_t,prof_t,pks,locs,ax_prof,coefPrevFit,tol,iter,...
-    smooth_span,bs_crit,sSpPrev,eSpPrev)
+function [h_line, detectedEventsMask, coef, sp_fit, ...
+    startOfSpark, endOfSpark] = fitSparkRise(pxSz_t, x_t, prof_t, ...
+    pks, locs, ax_prof, coefPrevFit, tol, iter,...
+    smooth_span, bs_crit, sSpPrev, eSpPrev)
 
 % locs in time units
 options = optimoptions('lsqnonlin','TolFun',tol,'TolX',tol,'MaxIter',iter,...
@@ -26,9 +27,9 @@ maxDurOfBaseline = round(100/pxSz_t); % maximum duration of baseline in points
 if ~isempty(pks)
     % analyze and fit all peaks of events
     for i = 1:numel(locs)
+        % get position of peak of events in pixels
+        [~,locs_px] = min(abs(x_t-locs(i)));
         if isempty(sSpPrev) && isempty(eSpPrev)
-            % get position of peak of events in pixels
-            [~,locs_px] = min(abs(x_t-locs(i)));
             % take event peak position and its surrounding
             % (maxDurOfBaseline, 3*maxDurOfBaseline)
             m_eventWithBsl = false(size(prof_t));

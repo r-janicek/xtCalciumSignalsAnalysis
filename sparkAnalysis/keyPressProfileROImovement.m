@@ -1,43 +1,40 @@
-function s = keyPressProfileROImovement(mainFig,s,h_rect,sz_img)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
-
+function E = keyPressProfileROImovement(mainFig, E, h_rect, sz_img)
+% move profile ROI with keyboard arrows
 try
-    p = getPosition(h_rect);
-    
-    pxSize_t = getappdata(mainFig,'pxSize_t');
-    
+    % get ROI position
+    p = h_rect.Position;
+    imgData = getappdata(mainFig,'imgData');
+    pxSzT = imgData.pxSzT;
+    % not to move ROI out of image
     h = sz_img(1);
-    w = sz_img(2)*pxSize_t;
-    
-    switch s.Key
+    w = sz_img(2)*pxSzT;
+
+    switch E.Key
         
         case 'rightarrow'
             if p(1)+p(3) < w
-                setPosition(h_rect,[p(1)+pxSize_t p(2) p(3) p(4)])
+                h_rect.Position = [p(1)+pxSzT p(2) p(3) p(4)];
             end
             
         case 'leftarrow'
             if p(1) > 0
-                setPosition(h_rect,[p(1)-pxSize_t p(2) p(3) p(4)])
+                h_rect.Position = [p(1)-pxSzT p(2) p(3) p(4)];
             end
             
         case 'uparrow'
-            
             if p(2) > 0
-                setPosition(h_rect,[p(1) p(2)-1 p(3) p(4)])
+                h_rect.Position = [p(1) p(2)-1 p(3) p(4)];
             end
         case 'downarrow'
             if p(2)+p(4) < h
-                setPosition(h_rect,[p(1) p(2)+1 p(3) p(4)])
+                h_rect.Position = [p(1) p(2)+1 p(3) p(4)];
             end
         
         otherwise
-            return
-                        
+            return             
     end
-       
-    plotROIprofile(getPosition(h_rect),mainFig)
+    % plot profile from moved ROI   
+    plotROIprofile(h_rect, [], mainFig)
     
 catch
     

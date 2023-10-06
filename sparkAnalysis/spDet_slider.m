@@ -9,12 +9,11 @@ hObjs = getappdata(mainFig,'hObjs');
 switch detectEventsPB.Tag
     
     case 'findEvents'
-        % eventsDetection(detectEventsPB,[],mainFig)
+        eventsDetection(detectEventsPB,[],mainFig)
         
     otherwise 
         profileAnalysis = getappdata(mainFig,'profileAnalysis');
-        h_rect_prof_pos = getPosition(profileAnalysis.h_rect_prof);
-        plotROIprofile(h_rect_prof_pos,mainFig)              
+        plotROIprofile(profileAnalysis.h_rect_prof, [], mainFig)  
 end
 % change text of slider
 set(hObjs.txt_spDet,'String',txt)

@@ -1,6 +1,4 @@
 function fitNum_slider(h_sld,~,fitFig)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
 
 % get data
 hObjsFit = getappdata(fitFig,'hObjsFit');

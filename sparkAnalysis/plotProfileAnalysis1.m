@@ -1,7 +1,5 @@
-function plotProfileAnalysis1(t,selectedROIs,TPP_delays,durTPP,pxSz_x,pairedAnalysis,analysisType)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
-
+function plotProfileAnalysis1(t, selectedROIs, pxSz_x)
+% show results of profile analysis from spark recovery analysis
 a = 0;
 aa = mod((1:1:height(selectedROIs)),3);
 aa(aa==0) = 3;
@@ -21,30 +19,24 @@ for i = 1:height(selectedROIs)
         a = a+1;
         hf = figure('Name',sprintf('repetitive sparks analysis #%d',a),'units','normalized','outerposition',[0 0.1 1 0.8]);
         set(hf, 'PaperPositionMode', 'auto','PaperOrientation', 'landscape','PaperType', 'A4');
-        
-        switch analysisType
-            case 'spark recovery photolysis'
-                
-                txt_h = uicontrol('Style','text','FontUnits','normalized','FontSize',0.7,...
-                    'Parent',gcf,'Units','normalized','Position', [0.01 0.98 0.25 0.02],...
-                    'FontWeight','bold','HorizontalAlignment','left',...
-                    'String',sprintf('TPP = %g ms; intra pair = %g ms; pair to pair = %g ms',...
-                    durTPP,min(TPP_delays(1,1)),max(TPP_delays(2,1))));
-                
-            otherwise    
-                txt_h = uicontrol('Style','text','FontUnits','normalized','FontSize',0.7,...
-                    'Parent',gcf,'Units','normalized','Position', [0.01 0.98 0.25 0.02],...
-                    'FontWeight','bold','HorizontalAlignment','left',...
-                    'String',sprintf('spark recovery ryanodine; whole image spark-to-spark delay = %g ms',wholeImgSpToSp));
-        end
-        
+        keyboard 
+        % change to invisible axes and text
+        txt_h = uicontrol('Style','text', ...
+            'FontUnits','normalized','FontSize',0.7,...
+            'Parent',gcf,'Units','normalized','Position', [0.01 0.98 0.25 0.02],...
+            'FontWeight','bold','HorizontalAlignment','left',...
+            'String',sprintf('spark recovery ryanodine; whole image spark-to-spark delay = %g ms',wholeImgSpToSp));
+
         for j=1:3
             h_axes(j,1) = axes('Parent',gcf,'Position',[0.03 0.7-(j-1)*0.25-(j-1)*0.08 0.94 0.25]);
         end
     end
     
     pp = selectedROIs.normProf{i};
-    
+    keyboard 
+    % set limits with getAxLims function
+    getAxisLimits(pp, 0)
+    getAxisLimits(pp, 0)
     plot(t,pp,'Parent',h_axes(aa(i),1),'Color','k')
     set(h_axes(aa(i),1),'YLim',([min(pp) max(pp)+1]))
     set(h_axes(aa(i),1),'XLim',[t(1) t(end)],'FontSize',12)
@@ -53,32 +45,28 @@ for i = 1:height(selectedROIs)
     title(h_axes(aa(i),1),sprintf('profile from position %d (pixels), %.2f \\mum',selectedROIs{i,1},selectedROIs{i,1}*pxSz_x),...
         'FontWeight','bold','FontSize',12)
     
-    %mark events
-    for k=1:height(selectedROIs.AnalysisResult{i,1})
+    % mark events
+    for k = 1:height(selectedROIs.AnalysisResult{i,1})
+
+        x1 = selectedROIs.eventsPeaks{i,1}{k,2};
+        x2 = selectedROIs.eventsPeaks{i,1}{k+1,2};
+        ym = max(selectedROIs.eventsPeaks{i,1}{k,1},selectedROIs.eventsPeaks{i,1}{k+1,1})+0.1 ;
+        c = double(selectedROIs.AnalysisResult{i,1}.acceptedPair(k));
+
+        line([x1 x2], [ym ym], 'Parent',h_axes(aa(i),1), ...
+            'Color',[c 0 0], 'LineWidth',2)
+        line([x1 x1], [ym ym-0.1], 'Parent',h_axes(aa(i),1), ...
+            'Color',[c 0 0], 'LineWidth',2)
+        line([x2 x2], [ym ym-0.1], 'Parent',h_axes(aa(i),1), ...
+            'Color',[c 0 0], 'LineWidth',2)
         
-        % decide if it is paired analysis or not 
-        if strcmp(pairedAnalysis,'Yes')  
-       
-            x1 = selectedROIs.eventsPeaks{i,1}{2*k-1,2};
-            x2 = selectedROIs.eventsPeaks{i,1}{2*k,2};
-            ym = max(selectedROIs.eventsPeaks{i,1}{2*k-1,1},selectedROIs.eventsPeaks{i,1}{2*k,1})+0.1 ;
-            c = double(selectedROIs.AnalysisResult{i,1}.acceptedPair(k));
-        
-        else 
-             x1 = selectedROIs.eventsPeaks{i,1}{k,2};
-             x2 = selectedROIs.eventsPeaks{i,1}{k+1,2};
-             ym = max(selectedROIs.eventsPeaks{i,1}{k,1},selectedROIs.eventsPeaks{i,1}{k+1,1})+0.1 ;
-             c = double(selectedROIs.AnalysisResult{i,1}.acceptedPair(k));
-                        
-        end
-                
-        line([x1 x2],[ym ym],'Parent',h_axes(aa(i),1),'Color',[c 0 0],'LineWidth',2)
-        line([x1 x1],[ym ym-0.1],'Parent',h_axes(aa(i),1),'Color',[c 0 0],'LineWidth',2)
-        line([x2 x2],[ym ym-0.1],'Parent',h_axes(aa(i),1),'Color',[c 0 0],'LineWidth',2)
-        
-        str = sprintf('A2/A1 = %.2f \n %.2f (ms)',selectedROIs.AnalysisResult{i,1}.AmplitudeRatio(k),selectedROIs.AnalysisResult{i,1}.peakPosDiff(k));
-        text(x1+(x2-x1)/2,ym + 0.2,str,'Parent',h_axes(aa(i),1),'HorizontalAlignment','center','FontSize',8,...
-            'FontWeight','bold','Rotation',45,'Color',[0.3 0.3 0.3])
+        str = sprintf('A2/A1 = %.2f \n %.2f (ms)', ...
+            selectedROIs.AnalysisResult{i,1}.AmplitudeRatio(k), ...
+            selectedROIs.AnalysisResult{i,1}.peakPosDiff(k));
+        text(x1+(x2-x1)/2, ym + 0.2, str, ...
+            'Parent',h_axes(aa(i),1), ...
+            'HorizontalAlignment','center', 'FontSize',8,...
+            'FontWeight','bold', 'Rotation',45, 'Color',[0.3 0.3 0.3])
     end
     
     

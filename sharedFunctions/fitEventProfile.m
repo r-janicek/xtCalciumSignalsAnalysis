@@ -1,4 +1,5 @@
-function outFitEvent = fitEventProfile(t,y,analysisFig,axFit,axRes,tauD_regionWise,waveSpeed)
+function outFitEvent = fitEventProfile(t, y, ...
+    analysisFig, axFit, axRes, tauD_regionWise, waveSpeed)
 
 % ax = axes to plot 
 hObjsA = getappdata(analysisFig,'hObjsA');

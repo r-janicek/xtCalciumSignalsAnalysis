@@ -61,95 +61,43 @@ for i=1:height(selectedROIs)
      
     %fit only rise of spark fun(t0,u,tR,A,y0)    
     [~,~,coef,sp_fit,startOfSpark,endOfSpark] = fitSparkRise( ...
-        pxSzT,t,prof,pks,locs,[],coefPrevFit,1e-9,1000,smooth_span,bs_crit,sSp,eSp);
+        pxSzT, t, prof, pks, locs, [], coefPrevFit, ...
+        1e-9, 1000, smooth_span, bs_crit, sSp, eSp);
     fit_result(i,1) = {coef};
     fit_result(i,2) = {sp_fit};
     
-    
     % calculate sparks parameters
     if hObjs.check_sparkParams.Value
-        
         % selected method of parameters calculation
         switch hObjs.calcSpParamMethodRBgroup.SelectedObject.String
-            
             case '2D gaussian fit'
-                calcMethod = '2DGauss';
-                
+                calcMethod = '2DGauss'; 
             case 'max crossing profiles'
                 calcMethod = 'peakXTProfiles';
-        
         end
      
         % calculate parameters of selected events
-        if strcmp(calcMethod,'2DGauss') && hObjs.check_pairAnalysis.Value
+        eventsParams_roi = findDetectedSparksParams(dataWholeAreaRaw, ...
+            statEvents, mainFig, calcMethod, [], posOfROI, startOfSpark, ...
+            endOfSpark, coef);
+        eventsParameters(i,1) = {eventsParams_roi};
 
-            [eventsParams, pairedEventsFit] = ...
-                findDetectedEventsParamsPair_2DGaussFit(...
-                dataWholeAreaRaw,statEvents,startOfSpark,endOfSpark,coef,...
-                posOfROI,mainFig,selectedROIs(i,:));
- 
-            % calculate also parameters from XT max crossing profiles, for comparison
-            % do not show
-            hObjs.check_showEventsFigs.Value = 0;
-            eventsParamsXTprofs = findDetectedEventsParams( ...
-                dataWholeAreaRaw,statEvents,startOfSpark,endOfSpark,coef, ...
-                posOfROI,mainFig,'peakXTProfiles');
-            hObjs.check_showEventsFigs.Value = 1;
-
-            % save
-            eventsParameters(i,1) = {eventsParams};
-            eventsParametersXTprofs(i,1) = {eventsParamsXTprofs};
-            pairedEventsFitsAll(i,1) = {pairedEventsFit};
-            flagPairedFitting(i,1) = true;
-            
-        else
-            eventsParams = findDetectedEventsParams( ...
-                dataWholeAreaRaw,statEvents,startOfSpark,endOfSpark,coef, ...
-                posOfROI,mainFig,calcMethod);
-            eventsParameters(i,1) = {eventsParams};
-            eventsParametersXTprofs(i,1) = {nan};
-            pairedEventsFitsAll(i,1) = {nan};
-            flagPairedFitting(i,1) = false;
-        end
-        
     else
+        eventsParams_roi.amplitude = nan(size(statEvents));
+        eventsParams_roi.TTP = nan(size(statEvents));
+        eventsParams_roi.FDHM = nan(size(statEvents));
+        eventsParams_roi.FWHM = nan(size(statEvents));
+        eventsParams_roi.sparkMass = nan(size(statEvents));
+        eventsParams_roi.tauD = nan(size(statEvents));
+        eventsParams_roi.AUC_2DFit = nan(size(statEvents));
         
-        eventsParams.amplitude = nan(size(statEvents));
-        eventsParams.TTP = nan(size(statEvents));
-        eventsParams.FDHM = nan(size(statEvents));
-        eventsParams.FWHM = nan(size(statEvents));
-        eventsParams.sparkMass = nan(size(statEvents));
-        eventsParams.tauD = nan(size(statEvents));
-        eventsParams.AUC_2DFit = nan(size(statEvents));
-        
-        eventsParameters(i,1) = {eventsParams};
-        pairedEventsFitsAll(i,1) = {nan};
-        eventsParametersXTprofs(i,1) = {nan};
-        flagPairedFitting(i,1) = false;
-        
+        eventsParameters(i,1) = {eventsParams_roi}; 
     end
 end
 
 % create result structure
 selectedROIs.finalFitResults = fit_result;
 selectedROIs.eventsParameters = eventsParameters;
-selectedROIs.eventsParamsXTprofs_compTo2DGauss = eventsParametersXTprofs;
-selectedROIs.pairedEventsFitsAll = pairedEventsFitsAll;
-selectedROIs.flagPairedFitting = flagPairedFitting;
-
-
-%select type of analysis
-if hObjs.check_pairAnalysis.Value    
-    pairwise = 'Yes';
-else
-    pairwise = 'No';    
-end
-
-
-% delays between photolytic pulses
-TPP_delays = imgData.TPP_delays;
-durTPP = imgData.durOfTPP;
-
 
 %analyze peaks ratio and distances
 for i = 1:height(selectedROIs)
@@ -158,7 +106,9 @@ for i = 1:height(selectedROIs)
         
         % calculate parameters of events from whole profile fit
         if any(strcmp(selectedROIs.Properties.VariableNames,'wholeProfileFit'))
-            paramsFittedEvents = calcParametersOfEventsFromWholeProfileFit(t,selectedROIs.wholeProfileFit{i,1}.profFit);
+            paramsFittedEvents = ...
+                calcParametersOfEventsFromWholeProfileFit(...
+                    t, selectedROIs.wholeProfileFit{i,1}.profFit);
             % normalized profiles
             profN = selectedROIs.wholeProfileFit{i,1}.yN;
             profN = profN(:);
@@ -201,99 +151,61 @@ for i = 1:height(selectedROIs)
         peaksWholeProfFit_derA = [paramsFittedEvents{2:end,8}]'; % 1. derivative
         peaksWholeProfFit_derP = [paramsFittedEvents{2:end,9}]';
         
-        
+
         if numel(peaks_P) > 1
-            
-            % choose type of analysis of events; pairwise or not
-            switch pairwise
-                
-                case 'Yes'
-                    
-                    %analyze peaks ratio and distances                                      
-                    for j = 1:numel(peaks_P)/2
-                        
-                        % ratios/diff of data from profile or spark 
-                        peaks_A_ratio(j,1) = peaks_A(2*j) / peaks_A(2*j-1);
-                        peaks_P_diff(j,1) = peaks_P(2*j) - peaks_P(2*j-1);
-                           
-                        peaks_derA_ratio(j,1) = firstDerMaxVal(2*j) / firstDerMaxVal(2*j-1);
-                        peaks_derP_diff(j,1) = firstDerMaxValPos(2*j) - firstDerMaxValPos(2*j-1);
-                        
+            % peaks positions difference
+            peaks_P_diff = diff(peaks_P);
+
+            peaks_derP_diff = diff(firstDerMaxValPos);
+            peaks_derP_diff = peaks_derP_diff(:);
+
+            peaksWholeProfFit_derP_diff = diff(peaksWholeProfFit_derP);
+
+
+            for j = 1:length(peaks_P_diff)
+
+                % ratios/diff of data from profile or spark
+                peaks_A_ratio(j,1) = peaks_A(j+1) / peaks_A(j);
+
+                peaks_derA_ratio(j,1) = firstDerMaxVal(j+1) / firstDerMaxVal(j);
+
+                sparkMassRatio(j,1) = sparkMass(j+1) / sparkMass(j);
+                sparkAmpRatio(j,1) = sparkAmp(j+1) / sparkAmp(j);
+
+                % ratios/diff of data from fit of profile
+                peaksWholeProfFit_A_ratio(j,1) = peaksWholeProfFit_A(j+1) / peaksWholeProfFit_A(j);
+                peaksWholeProfFit_P_diff(j,1) = peaksWholeProfFit_P(j+1) - peaksWholeProfFit_P(j);
+                peaksWholeProfFit_TTP_ratio(j,1) = peaksWholeProfFit_TTP(j+1) / peaksWholeProfFit_TTP(j);
+                peaksWholeProfFit_FDHM_ratio(j,1) = peaksWholeProfFit_FDHM(j+1) / peaksWholeProfFit_FDHM(j);
+                peaksWholeProfFit_AUC_ratio(j,1) = peaksWholeProfFit_AUC(j+1) / peaksWholeProfFit_AUC(j);
+                peaksWholeProfFit_tauD_ratio(j,1) = peaksWholeProfFit_tauD(j+1) / peaksWholeProfFit_tauD(j);
+
+                peaksWholeProfFit_derA_ratio(j,1) = peaksWholeProfFit_derA(j+1) / peaksWholeProfFit_derA(j);
+
+                % decide whether accept pair or not
+                if j==1
+
+                    if peaks_P(1) < 200 % 200 ms taken from Sobie analysis
+                        accepted(j,1) = false;
+                    else
                         accepted(j,1) = true;
-                        sparkMassRatio(j,1) = sparkMass(2*j)/sparkMass(2*j-1);
-                        sparkAmpRatio(j,1) = sparkAmp(2*j)/sparkAmp(2*j-1);
-                        
-                        % ratios/diff of data from fit of profile
-                        peaksWholeProfFit_A_ratio(j,1) = peaksWholeProfFit_A(2*j) / peaksWholeProfFit_A(2*j-1);
-                        peaksWholeProfFit_P_diff(j,1) = peaksWholeProfFit_P(2*j) - peaksWholeProfFit_P(2*j-1);
-                        peaksWholeProfFit_TTP_ratio(j,1) = peaksWholeProfFit_TTP(2*j) / peaksWholeProfFit_TTP(2*j-1);
-                        peaksWholeProfFit_FDHM_ratio(j,1) = peaksWholeProfFit_FDHM(2*j) / peaksWholeProfFit_FDHM(2*j-1);
-                        peaksWholeProfFit_AUC_ratio(j,1) = peaksWholeProfFit_AUC(2*j) / peaksWholeProfFit_AUC(2*j-1);
-                        peaksWholeProfFit_tauD_ratio(j,1) = peaksWholeProfFit_tauD(2*j) / peaksWholeProfFit_tauD(2*j-1);
-                        
-                        peaksWholeProfFit_derP_diff(j,1) = peaksWholeProfFit_derP(2*j) - peaksWholeProfFit_derP(2*j-1);
-                        peaksWholeProfFit_derA_ratio(j,1) = peaksWholeProfFit_derA(2*j) / peaksWholeProfFit_derA(2*j-1);
-                        
                     end
-                
-                    
-                case 'No'
-                    
-                    % peaks positions difference
-                    peaks_P_diff = diff(peaks_P);
-                    
-                    peaks_derP_diff = diff(firstDerMaxValPos);
-                    peaks_derP_diff = peaks_derP_diff(:);
-                    
-                    peaksWholeProfFit_derP_diff = diff(peaksWholeProfFit_derP);
-                    
-                                       
-                    for j = 1:length(peaks_P_diff)
-                        
-                        % ratios/diff of data from profile or spark 
-                        peaks_A_ratio(j,1) = peaks_A(j+1) / peaks_A(j);
-                        
-                        peaks_derA_ratio(j,1) = firstDerMaxVal(j+1) / firstDerMaxVal(j);
-                        
-                        sparkMassRatio(j,1) = sparkMass(j+1) / sparkMass(j);
-                        sparkAmpRatio(j,1) = sparkAmp(j+1) / sparkAmp(j);
-                        
-                        % ratios/diff of data from fit of profile
-                        peaksWholeProfFit_A_ratio(j,1) = peaksWholeProfFit_A(j+1) / peaksWholeProfFit_A(j);
-                        peaksWholeProfFit_P_diff(j,1) = peaksWholeProfFit_P(j+1) - peaksWholeProfFit_P(j);
-                        peaksWholeProfFit_TTP_ratio(j,1) = peaksWholeProfFit_TTP(j+1) / peaksWholeProfFit_TTP(j);
-                        peaksWholeProfFit_FDHM_ratio(j,1) = peaksWholeProfFit_FDHM(j+1) / peaksWholeProfFit_FDHM(j);
-                        peaksWholeProfFit_AUC_ratio(j,1) = peaksWholeProfFit_AUC(j+1) / peaksWholeProfFit_AUC(j);
-                        peaksWholeProfFit_tauD_ratio(j,1) = peaksWholeProfFit_tauD(j+1) / peaksWholeProfFit_tauD(j);
-                        
-                        peaksWholeProfFit_derA_ratio(j,1) = peaksWholeProfFit_derA(j+1) / peaksWholeProfFit_derA(j);
-                        
-                        % decide whether accept pair or not
-                        if j==1
-                            
-                            if peaks_P(1) < 200 % 200 ms taken from Sobie analysis
-                                accepted(j,1) = false;
-                            else
-                                accepted(j,1) = true;
-                            end
-                            
-                        else
-                            
-                            if (peaks_P_diff(j-1) < 200)
-                                
-                                accepted(j,1) = false;
-                                
-                            else
-                                accepted(j,1) = true;
-                                
-                            end
-                            
-                        end
-                        
+
+                else
+
+                    if (peaks_P_diff(j-1) < 200)
+
+                        accepted(j,1) = false;
+
+                    else
+                        accepted(j,1) = true;
+
                     end
-                    
+
+                end
+
             end
-                                             
+
         else
             peaks_A_ratio = [];
             peaks_P_diff = [];
@@ -381,23 +293,19 @@ for i = 1:height(selectedROIs)
     
 end
 
-
 % save data
 selectedROIs.AnalysisResult = result;
 selectedROIs.allPeaksData = allPeaksData;
-
-
 profileAnalysis.selectedROIs = selectedROIs;
 setappdata(mainFig,'profileAnalysis',profileAnalysis)
 
-
 % plot result from analysis using fitting only rise part of each
 % event
-plotProfileAnalysis1(t,selectedROIs,TPP_delays,durTPP,pxSzX,pairwise,getappdata(mainFig,'analysisType'))
+plotProfileAnalysis1(t, selectedROIs, pxSzX, pairwise)
 
 % plot result from analysis using whole profile fit
-if any(strcmp(selectedROIs.Properties.VariableNames,'wholeProfileFit'))
-    plotProfileAnalysis2(t,selectedROIs,TPP_delays,durTPP,pxSzX,pairwise,getappdata(mainFig,'analysisType'))
+if any(strcmp(selectedROIs.Properties.VariableNames, 'wholeProfileFit'))
+    plotProfileAnalysis2(t, selectedROIs, pxSzX,pairwise)
 end
 
 % remove empty axes
