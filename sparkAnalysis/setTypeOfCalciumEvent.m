@@ -13,14 +13,14 @@ function setTypeOfCalciumEvent(hObj,E,mainFig)
 
 % get data
 hObjs = getappdata(mainFig, 'hObjs');
-eventsDetection = getappdata(mainFig,'sparkDetection');
+detectedEvnts = getappdata(mainFig,'sparkDetection');
 
 % handle interactions
 switch hObj.Type
     
     case {'rectangle', 'patch'}
         idx = str2double(hObj.Tag);
-        typeOfEvent = eventsDetection.typeOfEvent(idx);
+        typeOfEvent = detectedEvnts.typeOfEvent(idx);
         h_rectTxt = findobj(hObjs.ax_img,'Type','text', ...
                 'Tag','detectedEventRecText', 'String', hObj.Tag);
         
@@ -65,7 +65,6 @@ switch hObj.Type
         end
         
     case 'uimenu'
-        
         % handle to current object
         hCurrentObj = gco(mainFig);
         switch hCurrentObj.Type
@@ -78,7 +77,6 @@ switch hObj.Type
                 h_patch = hCurrentObj;
                 h_rect = findobj(hObjs.ax_img,'Type','rectangle', ...
                     'Tag',hCurrentObj.Tag);
-     
         end
   
         idx = str2double(h_rect.Tag);
@@ -111,20 +109,47 @@ switch hObj.Type
             case '6. caffeine transient'
                 typeOfEvent = 6;
                 c = [1 1 0];
-                
+            
+            case 'delete detected event'
+                % answer = questdlg( ...
+                %     'Would you like to delete selected event?', ...
+                % 	'Delete selected event.', ...
+                % 	'YES','NO','NO');
+                answer = 'YES';
+                switch answer
+                    case 'YES'
+                        % delete event from detection output
+                        newDetectedEvents = detectedEvnts.detectedEvents;
+                        newDetectedEvents(idx) = [];
+                        newTypeOfEvent = detectedEvnts.typeOfEvent;
+                        newTypeOfEvent(idx) = [];
+                        newMaskOfAcceptedSparks = detectedEvnts.maskOfAcceptedSparks;
+                        newMaskOfAcceptedSparks(idx) = [];
+                        detectedEvnts.detectedEvents = newDetectedEvents;
+                        detectedEvnts.typeOfEvent = newTypeOfEvent;
+                        detectedEvnts.maskOfAcceptedSparks = newMaskOfAcceptedSparks;
+                        % save changes
+                        setappdata(mainFig, 'sparkDetection', detectedEvnts)
+                        % update detected events
+                        eventsDetection(hObj, [], mainFig, 'update')
+
+                    case 'NO'
+                        return
+                end
+
+
             case 'split event (watershed)'
                 % apply watershed transform on selected event only
                 % get data of event
 
                 eventToSplit = struct( ...
                     'idx', idx, ...
-                    'eventDectProp', eventsDetection.detectedEvents(idx), ...
-                    'type', eventsDetection.typeOfEvent(idx), ...
-                    'state', eventsDetection.maskOfAcceptedSparks(idx), ...
+                    'eventDectProp', detectedEvnts.detectedEvents(idx), ...
+                    'type', detectedEvnts.typeOfEvent(idx), ...
+                    'state', detectedEvnts.maskOfAcceptedSparks(idx), ...
                     'c', h_rect.EdgeColor, ...
                     'h_rect' , h_rect, ...
                     'h_patch', h_patch);
-                
                 splitSelectedEventWindow(mainFig, eventToSplit)
 
 
@@ -145,9 +170,10 @@ switch hObj.Type
                     hObjs.check_showEventsFigs.Value = 1;
                 end
                 findDetectedSparksParams(imgData.imgDataXTfluoR, ...
-                    eventsDetection.detectedEvents(idx), ...
+                    detectedEvnts.detectedEvents(idx), ...
                     mainFig, calcMethod,...
-                    eventsDetection.detectedEventsRec(idx) );
+                    detectedEvnts.detectedEventsRec(idx), ...
+                    [], [], [], []); 
                 % set back
                 hObjs.check_showEventsFigs.Value = showEventsFigOldVal;           
         end
@@ -163,11 +189,11 @@ try
     h_patch.EdgeColor = c;
     h_patch.FaceColor = c;
 
-    eventsDetection.maskOfAcceptedSparks(idx) = state;
-    eventsDetection.typeOfEvent(idx) = typeOfEvent;
+    detectedEvnts.maskOfAcceptedSparks(idx) = state;
+    detectedEvnts.typeOfEvent(idx) = typeOfEvent;
 
     % save changes
-    setappdata(mainFig, 'sparkDetection', eventsDetection)
+    setappdata(mainFig, 'sparkDetection', detectedEvnts)
     try
         calcSparkFreq(mainFig,true)
     catch

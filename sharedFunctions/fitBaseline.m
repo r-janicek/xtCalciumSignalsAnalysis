@@ -1,10 +1,14 @@
-function bsFit = fitBaseline(t, y, type, mBs, plotResult, ax)
-keyboard
+function bsFit = fitBaseline(t, y, type, mBs, plotResult, ax, params)
+
 % t = time
 % y = profile
 % type = type of function
 % mBs = mask of baseline
 % plotResult = 1 or 0, plot results in axes ax
+% params = parameters of fit function 
+if strcmp(type, 'polynomial')
+    type = ['poly', params(1)];
+end
 
 switch type
        
@@ -38,7 +42,19 @@ switch type
                 
         % baseline fit
         bsFit = fitFun(coef,t);
+     
+
+    case 'spline'
+        n_knots = str2double(hObjsFit.h_edit_paramFitBs1.String);
+        splOrd = str2double(hObjsFit.h_edit_paramFitBs2.String);  % spline order
         
+        spl = spap2(n_knots,splOrd,prof.t(:),prof.y(:),double(prof.baselineM(:)));
+        % newknt for a possibly better knot distribution
+        knots = newknt(spl);
+        % least-squares approximation
+        spl = spap2(knots, splOrd, prof.t, prof.y, double(prof.baselineM(:)));
+        bsFit = fnval(spl,prof.t);
+
         
     otherwise
         ft = fittype(type);
@@ -63,8 +79,9 @@ if plotResult
     hl_m_Old = findobj(ax,'Type','Line','-regexp','Tag','Mask');
     delete(hl_m_Old)
     % new mask
-    hl_m = line(t(mBs),y(mBs),'Parent',ax,'Color','g',...
-        'LineStyle','none','Marker','.','MarkerSize',20,'LineWidth',1,'Tag','baselineMask');
+    hl_m = line(t(mBs),y(mBs), 'Parent',ax, 'Color','g',...
+        'LineStyle','none', 'Marker','.', 'MarkerSize',20, ...
+        'LineWidth',1, 'Tag','baselineMask');
     uistack(hl_m, 'bottom')
     
 end

@@ -74,6 +74,14 @@ switch str
                 'Position',[xr yr wr hr]);
         end
         % setup roi
+        % try to set postition of crop ROI 
+        if imgData.t(end) > 30000
+            h_rect_crop.Position = [
+                6500 ...
+                size(imgDataXTfluoFN,1)*0.1 ...
+                30000 ...
+                size(imgDataXTfluoFN,1)*0.8];
+        end
         h_rect_crop.Color = 'r';
         h_rect_crop.Tag = 'croppImg';
 

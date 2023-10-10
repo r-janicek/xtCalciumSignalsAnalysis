@@ -5,7 +5,7 @@ function bg_sld_selection(h_O,~)
 h_fig = h_O.Parent;
 
 % get data
-if strcmp(h_fig.Name,'sparks analysis')
+if strcmp(h_fig.Name,'spark detection')
     % get data
     hObjs = getappdata(h_fig,'hObjs');
     imgData = getappdata(h_fig,'imgData');

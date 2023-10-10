@@ -27,7 +27,7 @@ profileAnalysis = getappdata(mainFig,'profileAnalysis');
 detectEventsPB = getappdata(mainFig,'lastPressedPusbutton'); 
 
 if strcmp(detectEventsPB.Tag,'findEvents')
-    eventsDetection(hObjs.h_push_sparks,[],mainFig)
+    eventsDetection(hObjs.h_push_sparks,[],mainFig,'new')
 else
     
     cropRoi = profileAnalysis.croppedDataWholeAreaRoi; % filtred and possibly normalized data

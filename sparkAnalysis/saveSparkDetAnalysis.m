@@ -348,13 +348,21 @@ end
 % get handle of imgage parts analysis
 h_imgPartsAnalysis = findobj('-regexp','Tag','parts of image');
 
-% handles of figures of ca events  
+% handles of figures of ca events, take only accepted sparks 
 h_figsCaEvents = findobj('Type','figure','Tag','CaEventParam');
 if ~isempty(h_figsCaEvents)
     eventNum = arrayfun(@(x) sscanf(x.Name,'spark from ROI #: %d'), ...
         h_figsCaEvents, 'UniformOutput',1);
     [~,indx_e] = sort(eventNum, 1, 'ascend');
     h_figsCaEvents = h_figsCaEvents(indx_e);
+    % take only accepted sparks
+    acceptedSparks = dataSparks(dataSparks.maskOfAcceptedSparks,:);
+    % close not accepted ones
+    h_figsCaEvents_notAccepted = h_figsCaEvents( ...
+        ~ismember(eventNum(indx_e), acceptedSparks.sparkROINum));
+    h_figsCaEvents = h_figsCaEvents( ...
+        ismember(eventNum(indx_e), acceptedSparks.sparkROINum));
+    close(h_figsCaEvents_notAccepted)
 end
 
 % get handles of all figures to save
@@ -401,17 +409,19 @@ if ~isempty(allHtoSave)
         
         % using print option and postscript     
         % create file 
-        if ~exist(sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs), 'file')
-            print(allHtoSave(i), ...
-                sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs), '-dpsc')
-            exportgraphics(allHtoSave(i), ...
-                sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs))
-        else
-            print(allHtoSave(i), '-dpsc', '-append', ...
-                sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs))
+        if ~exist(sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), 'file')
+            % print(allHtoSave(i), ...
+            %     sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs), '-dpsc')
             exportgraphics(allHtoSave(i), ...
                 sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), ...
-                'Append',true, 'Resolution',300)
+                'Resolution',str2double(hObjs.h_edit_res.String))
+        else
+            % print(allHtoSave(i), '-dpsc', '-append', ...
+            %     sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs))
+            exportgraphics(allHtoSave(i), ...
+                sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), ...
+                'Append',true, ...
+                'Resolution',str2double(hObjs.h_edit_res.String))
         end
                                              
     end            

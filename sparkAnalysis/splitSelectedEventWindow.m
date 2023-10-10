@@ -355,10 +355,10 @@ hObjs = getappdata(mainFig, 'hObjs');
 imgData = getappdata(mainFig, 'imgData');
 pxSzT = imgData.pxSzT;
 
-% delete original events, and redraw them with splitted one
-delete(sparkDetection.detectedEventsRec)
-delete(sparkDetection.detectedEventsMask)
-delete(findall(hObjs.ax_img,'Tag','detectedEventRecText'))
+% % delete original events, and redraw them with splitted one
+% delete(sparkDetection.detectedEventsRec)
+% delete(sparkDetection.detectedEventsMask)
+% delete(findall(hObjs.ax_img, 'Tag','detectedEventRecText'))
 
 % update sparkDetection structure with splitted events
 % do not take rejected events
@@ -370,101 +370,108 @@ newDetectedEvents = [ ...
     sparkDetection.detectedEvents(1:eventToSplit.idx-1); ...
     acceptedEvents.detectedEvents; ...
     sparkDetection.detectedEvents(eventToSplit.idx+1:end) ];
-
 newTypeOfEvent = [ ...
     sparkDetection.typeOfEvent(1:eventToSplit.idx-1), ...
     acceptedEvents.typeOfEvent, ...
     sparkDetection.typeOfEvent(eventToSplit.idx+1:end) ];
-
 newMaskOfAcceptedSparks = [ ...
     sparkDetection.maskOfAcceptedSparks(1:eventToSplit.idx-1), ...
     acceptedEvents.maskOfAcceptedSparks, ...
     sparkDetection.maskOfAcceptedSparks(eventToSplit.idx+1:end) ];
 
-% create uicontextmenu to change type of event later
-% 1 = spark, 2 = long-lasting spark, 3 = mini-wave, 4 = wave, 5 = transient
-cm = uicontextmenu(mainFig);
-m1 = uimenu(cm,'Text','1. spark', ...
-    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m2 = uimenu(cm,'Text','2. LL spark', ...
-    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m3 = uimenu(cm,'Text','3. mini-wave', ...
-    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m4 = uimenu(cm,'Text','4. wave', ...
-    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m5 = uimenu(cm,'Text','5. transient', ...
-    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m6 = uimenu(cm,'Text','6. caffeine transient', ...
-    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m7 = uimenu(cm,'Text','split event (watershed)', ...
-        'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-m8 = uimenu(cm,'Text','show parameters of detected event', ...
-        'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-
-% show newly splitted in mainFig axes
-detectedEventsRec = gobjects(length(newDetectedEvents),1);
-detectedEventsMask = gobjects(length(newDetectedEvents),1);
-% plot bounding rectangles
-for i = 1:length(newDetectedEvents)
-    
-    pos = newDetectedEvents(i).BoundingBox;
-    % check dimensions of events
-    if newMaskOfAcceptedSparks(i)
-        switch newTypeOfEvent(i)
-            case 1
-                eventColor = [1 0 0];
-            case 2
-                eventColor = [1 0 1];
-            case 3
-                eventColor = [0 1 1];
-            case 4
-                eventColor = [0 1 0];
-            case 5
-                eventColor = [1 1 1];
-            case 6
-                eventColor = [1 1 0];
-        end
-    else
-        eventColor = [0 0 0];
-    end
-    
-    detectedEventsRec(i) = rectangle( ...
-        'Position',[pos(1)*pxSzT pos(2) pos(3)*pxSzT pos(4)],...
-        'Parent',hObjs.ax_img,'EdgeColor',eventColor,...
-        'LineWidth',3,'Tag',num2str(i),...
-        'ButtonDownFcn', {@setTypeOfCalciumEvent, mainFig}, ...
-        'UIContextMenu', cm);
-    
-    % show detected mask
-    detectedEventsMask(i) = patch( ...
-        'Faces',(1:numel(newDetectedEvents(i).Boundary(:,2))), ...
-        'Vertices',[newDetectedEvents(i).Boundary(:,2).*pxSzT, ...
-                    newDetectedEvents(i).Boundary(:,1)], ...
-        'FaceColor',eventColor, 'FaceAlpha',0.05, ...
-        'EdgeColor',eventColor, 'EdgeAlpha',1, ...
-        'Parent',hObjs.ax_img, ...
-        'LineWidth',2, 'Tag',num2str(i),...
-        'ButtonDownFcn', {@setTypeOfCalciumEvent, mainFig}, ...
-        'UIContextMenu', cm);
-    
-    text(hObjs.ax_img,detectedEventsRec(i).Position(1),...
-        detectedEventsRec(i).Position(2),num2str(i),...
-        'FontSize',10,'VerticalAlignment','bottom','FontWeight','bold',...
-        'Color',eventColor,'Tag','detectedEventRecText')
-    
-    clearvars pos
-end
-
-% update data in mainFig
 sparkDetection.detectedEvents = newDetectedEvents;
 sparkDetection.typeOfEvent = newTypeOfEvent;
 sparkDetection.maskOfAcceptedSparks = newMaskOfAcceptedSparks;
-sparkDetection.detectedEventsRec = detectedEventsRec;
-sparkDetection.detectedEventsMask = detectedEventsMask;
-% recalculate spark frequency
-calcSparkFreq(mainFig, 1);
-sparkDetection.sparkFreq = str2double(hObjs.txt_correctedSpF.String{1});
-setappdata(mainFig,'sparkDetection',sparkDetection)
+% save changes
+setappdata(mainFig, 'sparkDetection', sparkDetection)
+% update detected events
+eventsDetection([], [], mainFig, 'update')
+
+% 
+% % create uicontextmenu to change type of event later
+% % 1 = spark, 2 = long-lasting spark, 3 = mini-wave, 4 = wave, 5 = transient
+% cm = uicontextmenu(mainFig);
+% m1 = uimenu(cm,'Text','1. spark', ...
+%     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m2 = uimenu(cm,'Text','2. LL spark', ...
+%     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m3 = uimenu(cm,'Text','3. mini-wave', ...
+%     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m4 = uimenu(cm,'Text','4. wave', ...
+%     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m5 = uimenu(cm,'Text','5. transient', ...
+%     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m6 = uimenu(cm,'Text','6. caffeine transient', ...
+%     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m7 = uimenu(cm,'Text','split event (watershed)', ...
+%         'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% m8 = uimenu(cm,'Text','show parameters of detected event', ...
+%         'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+% 
+% % show newly splitted in mainFig axes
+% detectedEventsRec = gobjects(length(newDetectedEvents),1);
+% detectedEventsMask = gobjects(length(newDetectedEvents),1);
+% % plot bounding rectangles
+% for i = 1:length(newDetectedEvents)
+% 
+%     pos = newDetectedEvents(i).BoundingBox;
+%     % check dimensions of events
+%     if newMaskOfAcceptedSparks(i)
+%         switch newTypeOfEvent(i)
+%             case 1
+%                 eventColor = [1 0 0];
+%             case 2
+%                 eventColor = [1 0 1];
+%             case 3
+%                 eventColor = [0 1 1];
+%             case 4
+%                 eventColor = [0 1 0];
+%             case 5
+%                 eventColor = [1 1 1];
+%             case 6
+%                 eventColor = [1 1 0];
+%         end
+%     else
+%         eventColor = [0 0 0];
+%     end
+% 
+%     detectedEventsRec(i) = rectangle( ...
+%         'Position',[pos(1)*pxSzT pos(2) pos(3)*pxSzT pos(4)],...
+%         'Parent',hObjs.ax_img,'EdgeColor',eventColor,...
+%         'LineWidth',3,'Tag',num2str(i),...
+%         'ButtonDownFcn', {@setTypeOfCalciumEvent, mainFig}, ...
+%         'UIContextMenu', cm);
+% 
+%     % show detected mask
+%     detectedEventsMask(i) = patch( ...
+%         'Faces',(1:numel(newDetectedEvents(i).Boundary(:,2))), ...
+%         'Vertices',[newDetectedEvents(i).Boundary(:,2).*pxSzT, ...
+%                     newDetectedEvents(i).Boundary(:,1)], ...
+%         'FaceColor',eventColor, 'FaceAlpha',0.05, ...
+%         'EdgeColor',eventColor, 'EdgeAlpha',1, ...
+%         'Parent',hObjs.ax_img, ...
+%         'LineWidth',2, 'Tag',num2str(i),...
+%         'ButtonDownFcn', {@setTypeOfCalciumEvent, mainFig}, ...
+%         'UIContextMenu', cm);
+% 
+%     text(hObjs.ax_img,detectedEventsRec(i).Position(1),...
+%         detectedEventsRec(i).Position(2),num2str(i),...
+%         'FontSize',10,'VerticalAlignment','bottom','FontWeight','bold',...
+%         'Color',eventColor,'Tag','detectedEventRecText')
+% 
+%     clearvars pos
+% end
+% 
+% % update data in mainFig
+% sparkDetection.detectedEvents = newDetectedEvents;
+% sparkDetection.typeOfEvent = newTypeOfEvent;
+% sparkDetection.maskOfAcceptedSparks = newMaskOfAcceptedSparks;
+% sparkDetection.detectedEventsRec = detectedEventsRec;
+% sparkDetection.detectedEventsMask = detectedEventsMask;
+% % recalculate spark frequency
+% calcSparkFreq(mainFig, 1);
+% sparkDetection.sparkFreq = str2double(hObjs.txt_correctedSpF.String{1});
+% setappdata(mainFig,'sparkDetection',sparkDetection)
 
 % close window
 delete(wFig)

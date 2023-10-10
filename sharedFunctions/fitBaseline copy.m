@@ -1,6 +1,4 @@
-function fitBaseline(~,~,fitFig)
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+function fitBaseline(~, ~, fitFig)
 
 set(fitFig,'Pointer','watch')
 drawnow

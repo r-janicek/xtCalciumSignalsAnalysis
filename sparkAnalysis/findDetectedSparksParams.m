@@ -62,14 +62,22 @@ if ~isempty(statSparks)
             case 'spark recovery ryanodine'
                 sparkROInum = i;
         end
-        
+        if isempty(startOfSpark)
+            sSpark = [];
+            eSpark = [];
+            prevSparkFitCoeffs = [];
+        else
+            sSpark = startOfSpark(i);
+            eSpark = endOfSpark(i);
+            prevSparkFitCoeffs = prevFitCoeffs(i,:);
+        end
         % get image of event and max crossing profiles
         [imgE, imgEs, imgE_m, maxOfEventPos, ... 
             maxCrossProfs, t0, bs, eventROIstart_t] = ...
             eventImgAndMaxCrossingProfiles( ...
-            statSparks(i), startOfSpark(i), endOfSpark(i),...
-            pxSzT, pxSzX, n_px_t, n_px_x, img, prevFitCoeffs(i,:), mainFig);
-
+            statSparks(i), sSpark, eSpark,...
+            pxSzT, pxSzX, n_px_t, n_px_x, img, prevSparkFitCoeffs, mainFig);
+        
         t = maxCrossProfs.t;
         t_ups = maxCrossProfs.t_ups;
         t_event_prof = maxCrossProfs.t_event_prof;
@@ -257,7 +265,6 @@ if ~isempty(statSparks)
                     eventParams.AUC_2DFit(i,1) = nan;
                       
                 catch
-                 
                     % if cannot get profiles for some reason
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
@@ -434,6 +441,14 @@ if ~isempty(statSparks)
                     x_prof_fit = x_event_profS;
                     x_prof_fit_txt = ...
                         'profile from image smoothed with 2D spline';
+                    if ~exist('eParamsEst','var')
+                        switch calcMethodPrev
+                            case 'peakXTProfiles'
+                                eParamsEst = eP_profs;
+                            case '2DGauss'
+                                eParamsEst = eP_2Dfit;
+                        end
+                    end
                     half_max_x_1 = eParamsEst.half_max_x_1;
                     half_max_x_2 = eParamsEst.half_max_x_2;
                     half_max_x = eParamsEst.half_max_x;
@@ -568,13 +583,13 @@ if ~isempty(statSparks)
             % 2.text axes, parameters of analyzed event
             params_txt = {
                 [sprintf('amplitude = %0.2f',eventParams.amplitude(i,1)), ...
-                ' (',char(916),'F/F0)'],...
+                ' (',char(916),'F/F_0)'],...
                 sprintf('TTP = %0.2f (ms)',eventParams.TTP(i,1)), ...
                 sprintf('FDHM = %0.2f (ms)',eventParams.FDHM(i,1)), ...
                 [sprintf('FWHM = %0.2f ',eventParams.FWHM(i,1)), ...
                 '(',char(181),'m)'],...
                 [sprintf('sparkMass = %0.2f ',eventParams.sparkMass(i,1)), ...
-                '(',char(916),'F/F0*',char(181),'m^3)']};
+                '(',char(916),'F/F_0*',char(181),'m^3)']};
             ax_txt_b = axes(hf, 'Units','normalized', ...
                 'Position',[dx 1-4*dy-h_a-2*dy 1-2*dx 2*dy], ...
                 'Visible','off');

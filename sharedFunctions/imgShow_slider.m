@@ -10,7 +10,7 @@ end
 h_fig = imgSld.Parent;
 
 % get data
-if strcmp(h_fig.Name,'sparks analysis')
+if strcmp(h_fig.Name,'spark detection')
     hObjs = getappdata(h_fig,'hObjs');
     imgSld_w = str2double(hObjs.h_edit_imgSld_w.String)*1000; % change from s to ms
     if isfield(hObjs, 'ax_img_sparks')
