@@ -57,6 +57,9 @@ m8 = uimenu(cm,'Text','show parameters of detected event', ...
     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
 m9 = uimenu(cm,'Text','delete detected event', ...
     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+m10 = uimenu(cm,'Text','delete multiple detected events', ...
+    'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
+
 
 detectedEventsRec = gobjects(length(events),1);
 detectedEventsMask = gobjects(length(events),1);

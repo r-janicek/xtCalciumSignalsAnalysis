@@ -264,7 +264,7 @@ switch piecewise
                 coef = fmincon(@(p)fitFunSum(p,x,y,wE),coef,...
                     [],[],[],[], ...
                     [min(y),0,0,min(x)],...
-                    [max(y) max(y) max(x)-min(x) max(x)], ...
+                    [max(y) inf max(x)-min(x) max(x)], ...
                     [],opt);
                 
                 bs = coef(1);
@@ -277,10 +277,10 @@ switch piecewise
                     yFit_ups = [];
                 end
 % %     keyboard
-%                 figure
-%                 plot(x,y)
-%                 hold on
-%                 plot(x_ups,fitFun(coef,x_ups),'r')
+                % figure
+                % plot(x,y)
+                % hold on
+                % plot(x_ups,fitFun(coef,x_ups),'r')
                 
  
             case 'EMG'

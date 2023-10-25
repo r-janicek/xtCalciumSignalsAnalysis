@@ -392,11 +392,11 @@ end
 
 % set up pushbutton for cropping
 set(hObjs.h_pb_crop, ...
-    'String','<html> <p align="center"> set ROI to crop <html>')
-set(hObjs.h_pb_crop,'FontWeight','normal')
+    'String','<html> <p align="center"> set ROI to crop <html>', ...
+    'FontWeight','normal', 'Enable','on')
 if strcmp(get(hObjs.h_pb_crop,'String'),'crop')  
-    set(hObjs.h_pb_crop,'String','set ROI for cropping')
-    set(hObjs.h_pb_crop,'FontWeight','normal')
+    set(hObjs.h_pb_crop,'String','set ROI for cropping', ...
+        'FontWeight','normal')
 end
 % set FWHM for spark detection, in pixels, 2 um
 set(hObjs.h_edit_fFWHM,'String','10')

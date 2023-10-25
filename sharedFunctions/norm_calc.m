@@ -221,6 +221,7 @@ set(hObjs.h_pb_norm, 'Enable','off')
 set(hObjs.h_pb_GetBlank, 'Enable','off')
 set(hObjs.h_push_BlankROI, 'Enable','off')
 set(hObjs.h_edit_Blank, 'Enable','off')
+set(hObjs.h_pb_crop, 'Enable','off')
 switch getappdata(mainFig,'analysisType')
     case 'spark recovery ryanodine'
 

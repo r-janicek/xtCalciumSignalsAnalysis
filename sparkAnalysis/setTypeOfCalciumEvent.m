@@ -138,6 +138,18 @@ switch hObj.Type
                 end
 
 
+            case 'delete multiple detected events'
+                h_img = findobj(hObjs.ax_img, 'Type', 'Image');
+                h_img.PickableParts = 'none';
+                % change pointer
+                mainFig.Pointer = 'cross';
+                drawnow
+                hObjs.ax_img.ButtonDownFcn = ...
+                    {@deleteMultipleDetectedEvents};
+                mainFig.Pointer = 'arrow';
+                drawnow
+                
+
             case 'split event (watershed)'
                 % apply watershed transform on selected event only
                 % get data of event
@@ -169,11 +181,19 @@ switch hObj.Type
                 if showEventsFigOldVal < 1
                     hObjs.check_showEventsFigs.Value = 1;
                 end
-                findDetectedSparksParams(imgData.imgDataXTfluoR, ...
+                % check if use normalized image or filtered raw
+                if hObjs.check_useNormalizedImg.Value
+                    img = imgData.imgDataXTfluoFN;
+                else
+                    % filter raw image
+                    img = imgFiltering(imgData.imgDataXTfluoR, pxSzT, pxSzX);
+                end
+                findDetectedSparksParams(img, ...
                     detectedEvnts.detectedEvents(idx), ...
                     mainFig, calcMethod,...
                     detectedEvnts.detectedEventsRec(idx), ...
-                    [], [], [], []); 
+                    [], [], [], [], ...
+                    hObjs.check_useNormalizedImg.Value); 
                 % set back
                 hObjs.check_showEventsFigs.Value = showEventsFigOldVal;           
         end

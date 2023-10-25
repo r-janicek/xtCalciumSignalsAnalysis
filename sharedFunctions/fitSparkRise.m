@@ -1,7 +1,7 @@
 function [h_line, detectedEventsMask, coef, sp_fit, ...
     startOfSpark, endOfSpark] = fitSparkRise(pxSz_t, x_t, prof_t, ...
     pks, locs, ax_prof, coefPrevFit, tol, iter,...
-    smooth_span, bs_crit, sSpPrev, eSpPrev)
+    smooth_span, bs_crit, sSpPrev, eSpPrev, prof_t_evnts_m)
 
 % locs in time units
 options = optimoptions('lsqnonlin','TolFun',tol,'TolX',tol,'MaxIter',iter,...
@@ -47,6 +47,10 @@ if ~isempty(pks)
 
             bs_crit = round(bs_crit);
             percentl = prctile(prof_s, [25 50 bs_crit]);
+            if max(percentl) > max(prof_s(prof_t_evnts_m))
+                percentl = prctile(prof_s(prof_t_evnts_m), ...
+                    [25 50 bs_crit]);
+            end
             %iqr = percentl(3)- percentl(1);
             bsl = percentl(3);
             prof_s(isnan(prof_s)) = bsl;
@@ -71,6 +75,7 @@ if ~isempty(pks)
             end
             % find end of event
             prof_s_afterPeak = prof_s(l_s(idx_p):end);
+           
             pos_e = min( ...
                 l_s(idx_p)+find(gradient(prof_s_afterPeak)>=0, 1, 'first')-1, ...
                 l_s(idx_p)+3*maxDurOfBaseline ...
@@ -151,11 +156,11 @@ if ~isempty(pks)
             end
         end
 
-%         figure
-%         plot(t,ys,'ok')
-%         hold on
-%         plot(t,fun_e(x0,t),'ob')
-%         plot(t,fun_e(x,t),'or')
+        % figure
+        % plot(t,ys,'ok')
+        % hold on
+        % plot(t,fun_e(x0,t),'ob')
+        % plot(t,fun_e(x,t),'or')
 
         coef(i,:) = x;
         sp_fit(i,1) = {[t,fun_e(x,t)]};

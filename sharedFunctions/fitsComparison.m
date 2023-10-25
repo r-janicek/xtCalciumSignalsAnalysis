@@ -1,4 +1,4 @@
-function [ output_args ] = fitsCompare( input_args )
+function [ output_args ] = fitsComparison( input_args )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 % compare two models/fits based on number of parameters and

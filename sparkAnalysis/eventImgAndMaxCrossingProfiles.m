@@ -57,7 +57,6 @@ imgE_trsh_m(statOfSubRegions(p).PixelIdxList) = true;
 % nexttile
 % imagesc(imgE_trsh_m)
 
-
 % get position of centre of event
 r_m = round(statOfSubRegions(p).WeightedCentroid(2));
 % c_m = round(statOfSubRegions(p).WeightedCentroid(1));
@@ -100,13 +99,15 @@ if isempty(startOfEvent)
     %fit only rise of spark fun(t0,u,tR,A,y0)
     locs = t_whImg(cols_e(1)-1+c_m);
     pks = t_spark_prof_whImg(cols_e(1)-1+c_m);
+    t_whImg_evnt_m = false(size(t_whImg));
+    t_whImg_evnt_m(cols_e) = true;
    
     if isempty(prevFitCoef)
         try
             [~,~,prevFitCoef,~,startOfEvent,endOfEvent] = ...
-                fitSparkRise(pxSzT,t_whImg,...
-                t_spark_prof_whImg,pks,locs,[],[],1e-9,1000,...
-                smoothSpan,bsDetSensitivity,[],[]);
+                fitSparkRise(pxSzT, t_whImg,...
+                t_spark_prof_whImg, pks, locs, [], [], 1e-9,1000,...
+                smoothSpan, bsDetSensitivity, [], [], t_whImg_evnt_m);
         catch
             prevFitCoef = [];
             startOfEvent = cols_e(1);
@@ -128,7 +129,6 @@ end
 % function
 t_event_prof_m = false(size(cols_e));
 t_event_prof_m(startOfEvent-cols_e(1)+1:endOfEvent-cols_e(1)+1) = true;
-
 % adjusted event area data
 imgE = img(rows_e,cols_e);
 imgEm = imgMask(rows_e,cols_e);
@@ -141,7 +141,7 @@ eventROIstart_t = min(cols_e(:))*pxSzT;
 if isempty(eventROIstart_t), eventROIstart_t = 0; end
 
 %% redo smoothing and width of profiles estimation 
-% smooth little bit, to have only one max
+% smooth event image little bit, to have only one max
 try 
     imgEs = csaps(...
         {linspace(1,size(imgE,1),size(imgE,1)),linspace(1,size(imgE,2),size(imgE,2))},...
@@ -155,8 +155,10 @@ try
     % get position of centre of expanded event
     %centr = statEvents(i).WeightedCentroid;
     %r_m = round(centr(2)) - rows_e(1)+1;
-    [r_m,c_m] = find(imgE_s==max(imgE_s(:)));
-    
+    prof_t_imgE_s = mean(imgE_s(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), 1);
+    %[r_m,c_m] = find(imgE_s==max(imgE_s(:)));
+    [~, c_m] = max(prof_t_imgE_s);
+
     % dimension for calulation of profiles (t and x) crossing peak
     % decrease width of stripe for calculation of time profile
     if (r_m-(n_px_t-1)/2 <= 0) || (r_m+(n_px_t-1)/2 > size(imgE,1))

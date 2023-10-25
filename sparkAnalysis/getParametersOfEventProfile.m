@@ -1,5 +1,5 @@
 function eventParams = getParametersOfEventProfile( ... 
-    t,t_prof,x,x_prof,bs_t,bs_x,t0,blank,peakData,tProf_m)
+    t,t_prof,x,x_prof,bs_t,bs_x,t0,blank,peakData,tProf_m,normImgFlag)
 
 % bs = baseline
 % t0 = start of spark
@@ -23,12 +23,19 @@ eE = find(tProf_m,1,'last');
 if isempty(eE), eE = numel(tProf_m); end
 
 % (F-F0)/(F0-blank)
-if isempty(peakData)
-    Ampl = (max(t_prof)-bs_t)/(bs_t-blank);
+if normImgFlag
+    if isempty(peakData)
+        Ampl = max(t_prof)-bs_t;
+    else
+        Ampl = peakData.val-bs_t;
+    end
 else
-    Ampl = (peakData.val-bs_t)/(bs_t-blank);
+    if isempty(peakData)
+        Ampl = (max(t_prof)-bs_t)/(bs_t-blank);
+    else
+        Ampl = (peakData.val-bs_t)/(bs_t-blank);
+    end
 end
-
 
 %% time parameters
 % search for peak

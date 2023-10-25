@@ -397,17 +397,14 @@ end
 
 % save figures as .ps and also .pdf
 if ~isempty(allHtoSave)
-    
-    for i = 1:numel(allHtoSave)
-              
+    tic
+    for i = 1:numel(allHtoSave)     
         % set upfigures for printing
         set(allHtoSave(i), 'Units','pixels');
         posFig = get(allHtoSave(i),'Position');
         set(allHtoSave(i),'PaperPositionMode','Auto',...
                           'PaperUnits','points',...
-                          'PaperSize',[posFig(3), posFig(4)])
-        
-        % using print option and postscript     
+                          'PaperSize',[posFig(3), posFig(4)])   
         % create file 
         if ~exist(sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), 'file')
             % print(allHtoSave(i), ...
@@ -422,9 +419,11 @@ if ~isempty(allHtoSave)
                 sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), ...
                 'Append',true, ...
                 'Resolution',str2double(hObjs.h_edit_res.String))
-        end
-                                             
-    end            
+        end                                    
+    end   
+toc
+
+
     close(allHtoSave)
 end
 

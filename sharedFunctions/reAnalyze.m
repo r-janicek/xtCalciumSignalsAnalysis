@@ -10,13 +10,13 @@ imgData = getappdata(mainFig,'imgData');
 
 % try to load old analysis (xls file)
 % find path to selected data analysis
-
 [~,nImg,~] = fileparts(imgData.fileName);
 
-% look for pdf/pdfs with this image
+% look for excel file associated with this image
 listing = dir(imgData.filePath);
 listing = struct2table(listing);
-indXLS = cellfun(@(x) ~isempty( regexp(x,'.xls|.xlsx','once') ), listing.name);
+indXLS = cellfun(@(x) ~isempty( regexp(x,'.xls|.xlsx','once') ), ...
+    listing.name);
 fileNameXLS = listing.name(indXLS);
 
 indImgXLS = cellfun(@(x) ~isempty( regexp(x,nImg,'once') ), fileNameXLS);
@@ -34,10 +34,14 @@ catch
 end
 
 % get info from old analysis
-[rA,~]=find(cellfun(@(x) ~isempty(strfind(x,'animal:')),oldAnalysisInfo,'UniformOutput',1)==1);
-[rBlank,~]=find(cellfun(@(x) ~isempty(strfind(x,'blank:')),oldAnalysisInfo,'UniformOutput',1)==1);
-[rExpS,~]=find(cellfun(@(x) ~isempty(strfind(x,'exp_notes:')),oldAnalysisInfo,'UniformOutput',1)==1);
-rExpE = find( cellfun(@(x) all(ismissing(x)), oldAnalysisInfo(rExpS+1:end,1)),1,'first');
+[rA,~] = find(cellfun(@(x) ~isempty(strfind(x,'animal:')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+[rBlank,~] = find(cellfun(@(x) ~isempty(strfind(x,'blank:')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+[rExpS,~] = find(cellfun(@(x) ~isempty(strfind(x,'exp_notes:')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+rExpE = find( cellfun(@(x) all(ismissing(x)), ...
+    oldAnalysisInfo(rExpS+1:end,1)), 1, 'first');
 
 animal = oldAnalysisInfo{rA,2};
 expInfo = oldAnalysisInfo(rExpS+1:rExpS+rExpE-1,1);

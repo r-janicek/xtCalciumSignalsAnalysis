@@ -1,7 +1,7 @@
 function params= getParametersOfEventFromRawImage(...
     imgE, imgEs, imgE_m, ...
     bs, t0, r_m, c_m, ...
-    t_prof_s, x_prof_s, t, x, imgData)
+    t_prof_s, x_prof_s, t, x, imgData, normImgFlag)
 
 % calculate parameters of event from its image
 
@@ -92,7 +92,11 @@ imgEs_halfAmpl(~m_imgEs_halfAmpl) = 0;
 % normalized (F-F0)/(F0-blank)
 % take position of maximum as it was determined
 % before, take amplitude from time profile
-eventAmpl = ( t_prof_s(c_m)-bs ) / ( bs-imgData.blank );
+if ~normImgFlag
+    eventAmpl = ( t_prof_s(c_m)-bs ) / ( bs-imgData.blank );
+else
+    eventAmpl = t_prof_s(c_m) - bs;
+end
 
 % find t0, if does not exist
 if isempty(t0)
