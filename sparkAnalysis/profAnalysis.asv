@@ -312,7 +312,7 @@ setappdata(mainFig,'profileAnalysis',profileAnalysis)
 
 % plot result from analysis using fitting only rise part of each
 % event
-plotProfileAnalysis1(t, selectedROIs, pxSzX, pairwise)
+plotProfileAnalysis1(t, selectedROIs, pxSzX)
 
 % plot result from analysis using whole profile fit
 if any(strcmp(selectedROIs.Properties.VariableNames, 'wholeProfileFit'))

@@ -7,7 +7,7 @@ function bsFit = fitBaseline(t, y, type, mBs, plotResult, ax, params)
 % plotResult = 1 or 0, plot results in axes ax
 % params = parameters of fit function 
 if strcmp(type, 'polynomial')
-    type = ['poly', params(1)];
+    type = ['poly', num2str(params(1))];
 end
 
 switch type
@@ -22,7 +22,7 @@ switch type
             'Exclude',~mBs);
         % fit
         [f_bs, ~,~] = fit(t(:), y(:), ft, opts);
-        bsFit = feval(f_bs,t);
+        bsFit = feval(f_bs, t);
         
             
     case 'stretchedExp'
@@ -31,31 +31,35 @@ switch type
         % do fit
         opt = optimoptions('fmincon','TolFun',1e-9,'TolX',1e-9,'TolCon',1e-9,...
             'MaxIter',1000,'MaxFunEvals',3000);
-        coef = fmincon(@(p)fitFunSum(p,t(mBs),y(mBs)),...
+        coef = fmincon(@(p)fitFunSum(p, t(mBs), y(mBs)),...
             [100 t(end)/10 0.5 median(y(mBs))],[],[],[],[],[-inf -inf  0 -inf],[inf inf 1 inf],[],opt);
-%         mean(prof.y(find(prof.baselineM,100,'last')))
-%            figure
-%            plot(prof.t,prof.y)
-%            hold on
-%            plot(prof.t,fitFun(coef,prof.t),'r')
-%            plot(prof.t,fitFun([1 100 0.25 median(prof.y(prof.baselineM))],prof.t),'g')
-                
         % baseline fit
         bsFit = fitFun(coef,t);
      
 
     case 'spline'
-        n_knots = str2double(hObjsFit.h_edit_paramFitBs1.String);
-        splOrd = str2double(hObjsFit.h_edit_paramFitBs2.String);  % spline order
-        
-        spl = spap2(n_knots,splOrd,prof.t(:),prof.y(:),double(prof.baselineM(:)));
+        n_knots = params(1);
+        splOrd = params(2);  % spline order
+
+        spl = spap2(n_knots, splOrd, t(:), y(:), double(mBs(:)));
         % newknt for a possibly better knot distribution
         knots = newknt(spl);
         % least-squares approximation
-        spl = spap2(knots, splOrd, prof.t, prof.y, double(prof.baselineM(:)));
-        bsFit = fnval(spl,prof.t);
+        spl = spap2(knots, splOrd, t(:), y(:), double(mBs(:)));
+        bsFit = fnval(spl, t);
 
-        
+    case 'SmoothingSpline'
+        s_span = params(1);
+        ft = fittype('smoothingspline');
+        opts = fitoptions('Method','SmoothingSpline',...
+            'SmoothingParam',s_span,...
+            'Normalize','on',...
+            'Exclude',~mBs);
+        % fit
+        [f_bs, ~,~] = fit(t(:), y(:), ft, opts);
+        bsFit = feval(f_bs, t);
+
+
     otherwise
         ft = fittype(type);
         opts = fitoptions('Method','NonlinearLeastSquares',...
@@ -72,7 +76,8 @@ if plotResult
     % delete previous fit
     delete(findobj(ax,'Tag','baselineFit'))
     % new fit
-    line(t,bsFit,'Parent',ax,'Color','b','LineStyle','-','LineWidth',2,...
+    line(t, bsFit, 'Parent',ax, ...
+        'Color','b', 'LineStyle','-', 'LineWidth',2,...
         'Tag','baselineFit');
     
     % delete previous mask

@@ -53,7 +53,7 @@ if isfield(prof,'yN')
     end
      
     % do fitting of baseline
-    fitBaseline([],[],fitFig)
+    fitProfileBaseline([],[],fitFig)
        
 end
 

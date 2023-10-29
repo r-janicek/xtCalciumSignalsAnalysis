@@ -22,7 +22,7 @@ sp_fit = {zeros(length(pks),1)};
 startOfSpark = zeros(length(pks),1); 
 prof_s = prof_s(:);
 
-maxDurOfBaseline = round(5000/pxSzT); % maximum duration of baseline in points
+maxDurOfBaseline = round(500/pxSzT); % maximum duration of baseline in points
 
 % smooth profile for difference analysis, loess with defined duration in ms  
 %prof_s = smooth(prof_t,3);

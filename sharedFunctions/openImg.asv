@@ -353,7 +353,7 @@ switch getappdata(mainFig,'analysisType')
             'String',['# sp*100',char(956),'m-1*s-1'])
         set(hObjs.txt_correctedSpF, ...
             'String',{'#';['sp*100',char(956),'m-1*s-1']})
-        set(hObjs.h_push_sparks, 'Enable','on')
+        set(hObjs.h_push_DetectSparks, 'Enable','on')
     otherwise
         set(hObjs.h_table_profs,'Data',zeros(5,2))
         % set normalization panel
@@ -361,7 +361,7 @@ switch getappdata(mainFig,'analysisType')
         set(hObjs.h_pb_norm,'String','normalize data')
         set(hObjs.h_pb_norm,'Callback',{@norm_data,mainFig})
         set(hObjs.h_pb_norm,'FontWeight','normal')
-        set(hObjs.h_push_sparks, 'Enable','off')
+        set(hObjs.h_push_DetectSparks, 'Enable','off')
         % set up panel for spark recovery
         % set width of ROI for spark recovery to 5 um width in pixels (odd number)
         n_px = round(6/pxSzX);

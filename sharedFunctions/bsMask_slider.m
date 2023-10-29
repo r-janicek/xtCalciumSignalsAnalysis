@@ -1,5 +1,5 @@
 function bsMask_slider(h_sld,~,fitFig)
-keyboard
+
 % get slider value
 sldVal = round(h_sld.Value);
 if sldVal==100, sldVal=99; end
@@ -32,9 +32,8 @@ end
 selectedProf.baselineM = mBs(:);
 setappdata(fitFig,'selectedProf',selectedProf);
 
-
 % do fitting of baseline
-fitBaseline([],[],fitFig)
+fitProfileBaseline([],[],fitFig)
 
 end
 

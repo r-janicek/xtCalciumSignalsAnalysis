@@ -47,7 +47,7 @@ fig.WindowButtonUpFcn = '';
 
 % set mask
 hl_x = hl.XData;
-
+mainFig = findobj(0,'Type','figure', 'Tag','mainFig');
 switch getappdata(mainFig,'analysisType')
     case {'spark recovery ryanodine', 'spark detection'}
         hObjsFit = getappdata(fig,'hObjsFit');
@@ -99,7 +99,7 @@ switch getappdata(mainFig,'analysisType')
                 selectedProf.baselineM = m;
                 setappdata(fig,'selectedProf',selectedProf);
                 % do fitting of baseline
-                fitBaseline([],[],fig)
+                fitProfileBaseline([],[],fig)
             case 'set mask of events'
                 selectedProf.eventsM = m;
                 setappdata(fig,'selectedProf',selectedProf);

@@ -1,6 +1,4 @@
 function selectBsFitFcn(hO,~,fitFig)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
 
 hObjsFit = getappdata(fitFig,'hObjsFit');
 imgData = getappdata(fitFig,'imgData'); 
@@ -47,7 +45,7 @@ switch hO.String{hO.Value}
 end
 
 % do fitting of baseline
-fitBaseline([],[],fitFig)
+fitProfileBaseline([],[],fitFig)
 
 end
 

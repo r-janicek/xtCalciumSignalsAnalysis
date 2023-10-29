@@ -11,9 +11,12 @@ end
 nProfiles = height(profileAnalysis.selectedROIs);
 
 %% create figure for fitting  
-fitFig = figure('Name','profile fit','units','normalized','outerposition',[0 0.2 1 0.8]);
-set(mainFig, 'PaperPositionMode','auto','PaperOrientation',...
-              'landscape','PaperType','A4','Tag','profilesFit');
+fitFig = figure('Name','profile fit', ...
+    'units','normalized', ...
+    'outerposition',[0 0.2 1 0.8]);
+set(mainFig, 'PaperPositionMode','auto', ...
+    'PaperOrientation','landscape', ...
+    'PaperType','A4');  % , 'Tag','profilesFit'
 
 h_txt_fitNum = uicontrol('Style','text',...
     'Parent',fitFig,'Units','normalized','Position', [0.1 0.96 0.8 0.03],...
@@ -25,57 +28,26 @@ ax_fit = axes('Parent',fitFig);
 set(ax_fit,'Position',[0.03 0.6 0.94 0.35])
 % set(get(ax_img,'Xlabel'),'String','t (ms)')
 set(ax_fit,'XTick',[],'YGrid','on','FontSize',14)
-set(get(ax_fit,'Ylabel'),'String','profile (F)','FontWeight','bold')
+set(get(ax_fit,'Ylabel'),'String','fluorescence (F)','FontWeight','bold')
 set(ax_fit,'buttondownfcn',{@mouseSetMaskFcn})
 
 % plot first profile
-prof = getSelectedProfileData(1,imgData,profileAnalysis,getappdata(mainFig,'analysisType'));
-
-
-%  keyboard
-%%%%%
-% d = 5
-% prof.t = d(:,1);
-% prof.y = d(:,2);
-% prof.baselineM = true(size(prof.y));
-% prof.eventsM = false(size(prof.y));
-% prof.eventsPeaks = {100,100};
-% % 
-% % %%%%%
-
-
-line(prof.t,prof.y,'Parent',ax_fit,'Color','k','LineStyle','-','LineWidth',1,...
+prof = getSelectedProfileData(1, imgData, profileAnalysis, ...
+    getappdata(mainFig,'analysisType'));
+line(prof.t, prof.y, 'Parent',ax_fit, ...
+    'Color','k', 'LineStyle','-', 'LineWidth',1,...
     'Tag','profile');
-set(ax_fit,'XLim',[prof.t(1) prof.t(end)],'YLim',[min(prof.y)*0.95 max(prof.y)*1.05])
+set(ax_fit, 'XLim',[prof.t(1) prof.t(end)], ...
+    'YLim', getAxisLimits(prof.y, 5))
 % show selected peaks
-line([prof.eventsPeaks{:,2}],ones(size([prof.eventsPeaks{:,2}])).*ax_fit.YLim(2),...
-    'Parent',ax_fit,'Color','r','LineStyle','none','LineWidth',1,...
-    'Marker','.','MarkerSize',profileAnalysis.peaksCircleSz,'Tag','selectedPeaks');
+line([prof.eventsPeaks{:,2}], ...
+    ones(size([prof.eventsPeaks{:,2}])).*ax_fit.YLim(2),...
+    'Parent',ax_fit, 'Color','r', ...
+    'LineStyle','none', 'LineWidth',1,...
+    'Marker','.', 'MarkerSize', ...
+    profileAnalysis.peaksCircleSz,'Tag','selectedPeaks');
 
-% show photolytic pulses positions if there are any 
-if isfield(imgData,'s_TPP')
-    
-    s_TPP  = imgData.s_TPP;
-    e_TPP = imgData.e_TPP;
-    
-    if ~isempty(s_TPP)
-        
-        Xpp = [prof.t(s_TPP); 
-               prof.t(e_TPP);
-               prof.t(e_TPP);
-               prof.t(s_TPP)];    
-           
-        Ypp = [ones(size(s_TPP)).*min(ax_fit.YLim);
-               ones(size(s_TPP)).*min(ax_fit.YLim);
-               ones(size(s_TPP)).*max(ax_fit.YLim);
-               ones(size(s_TPP)).*max(ax_fit.YLim)];
-        
-        patch('XData',Xpp, 'YData',Ypp, 'Parent',ax_fit, 'Tag','photolyticPulses',...
-            'FaceColor','r', 'FaceAlpha',0.5, 'EdgeColor','none')
-    end
-    
-end
-    
+% show photolytic pulses positions if there are any   
 ax_res = axes('Parent',fitFig);
 set(ax_res,'Position',[0.03 0.39 0.94 0.2])
 % set(get(ax_img_sparks,'Xlabel'),'String','t (ms)')
@@ -188,7 +160,7 @@ h_edit_paramFitBs2 = uicontrol('Style','edit','String','nan',...
 
 h_pb_fitBs = uicontrol('Style','pushbutton','String','<html> <p align="center"> fit of <br> baseline <html>',...
     'FontUnits','normalized','Parent',hpBs,'Units','normalized','FontSize',0.3,...
-    'Position', [0.05 0.325 0.3 0.275],'Callback', {@fitBaseline,fitFig});
+    'Position', [0.05 0.325 0.3 0.275],'Callback', {@fitProfileBaseline,fitFig});
 
 h_pb_normProf = uicontrol('Style', 'pushbutton',...
     'String','<html> <p align="center"> normalize <br> (&#916F/F0) <html>','FontUnits','normalized',...
@@ -360,7 +332,7 @@ setappdata(fitFig,'mainFig',mainFig)
 setappdata(fitFig,'selectedProf',prof) 
 
 % do fitting of baseline
-fitBaseline([],[],fitFig)
+fitProfileBaseline([],[],fitFig)
 
 end
 

@@ -5,7 +5,8 @@ switch hO.String
         addpath(genpath(fullfile(wd_path,'sparkAnalysis'))) % add path
         % start main window
         MainWindowSparksAndProfiles('spark detection');
-        hf = findall(0,'tag','spark detection');
+        hf = findall(0, 'Type','figure', ...
+            'Name','spark detection');
         % save type of analysis       
         setappdata(hf,'analysisType','spark detection'); 
         % set SparkAnalysis window  
@@ -23,7 +24,8 @@ switch hO.String
         addpath(genpath(fullfile(wd_path,'sparkAnalysis'))) % add path
         % start main window
         MainWindowSparksAndProfiles('spark recovery ryanodine');
-        hf = findall(0,'tag','spark recovery ryanodine');
+        hf = findall(0, 'Type','figure', ...
+            'Name','spark recovery ryanodine');
         % save type of analysis       
         setappdata(hf,'analysisType','spark recovery ryanodine');       
         % setup SparkAnalysis window  
@@ -39,7 +41,7 @@ switch hO.String
         set(hObjs.h_pb_sparksAnalysis,'Enable','off') 
         set(hObjs.h_pb_profilesFit,'Enable','on') 
         set(hObjs.h_pb_profileAnalysis,'Enable','on')       
-        set(hObjs.check_pairAnalysis,'Enable','off','Value',0)         
+%        set(hObjs.check_pairAnalysis,'Enable','off','Value',0)         
         set(hObjs.check_sparkParams,'Enable','on') 
         set(hObjs.check_showEventsFigs,'Enable','on') 
         set(hObjs.check_saveProfsAndFits,'Enable','on') 

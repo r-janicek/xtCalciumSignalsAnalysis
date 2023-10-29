@@ -216,7 +216,7 @@ if ~isempty(h_rect_F0)
     end
 end
 % set up main window
-set(hObjs.h_pb_norm, 'String','normalized (F/F0)')
+set(hObjs.h_pb_norm, 'String','normalized')
 set(hObjs.h_pb_norm, 'Enable','off')
 set(hObjs.h_pb_GetBlank, 'Enable','off')
 set(hObjs.h_push_BlankROI, 'Enable','off')

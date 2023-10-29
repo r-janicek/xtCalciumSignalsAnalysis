@@ -1,7 +1,6 @@
 function profileROIButtonDownFcn(h_O,event,mainFig)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
-
+% manage deleting detected events in cropped ROI or 
+% delete and add detected points (local maxima) in profile
 % load data
 try
     hObjs = getappdata(mainFig,'hObjs');
@@ -9,7 +8,8 @@ try
     profileAnalysis = getappdata(mainFig,'profileAnalysis');
 
     h_PeaksCirc = profileAnalysis.h_PeaksCirc;
-    allCircPos = arrayfun(@(x) get(x,'XData'), h_PeaksCirc,'UniformOutput',1);
+    allCircPos = arrayfun(@(x) get(x,'XData'), h_PeaksCirc, ...
+        'UniformOutput',1);
     posOfEvents = cell2mat(profileAnalysis.posOfEvents);
     smooth_span = str2double(get(hObjs.h_smooth_edit,'String'));
     bs_crit = str2double(get(hObjs.h_bsDet_edit,'String'));
@@ -31,30 +31,17 @@ try
     if mod(n_px,2)==0
         n_px = n_px - 1;
     end
-    
-%     %pos_centre_x = arrayfun(@(x) x.WeightedCentroid(1,1),S_event_SpRec,'UniformOutput',1);
-%     pos_centre_y = round(arrayfun(@(x) x.WeightedCentroid(1,2),statEventsSpRec,'UniformOutput',1));
-%     
-%     for i = 1:length(statEventsSpRec)
-%         
-%         CaEvent = croppedDataProfile(statEventsSpRec(i).PixelIdxList);
-%         [~,p_m] = max(CaEvent);
-%         px = statEventsSpRec(i).PixelIdxList;
-%         
-%         pos_centre_x(i,1) = ceil(px(p_m)/size(croppedDataProfile,1));
-%     end
-%     
-%     pos_centre_x((pos_centre_y>(c+(n_px-1)/2))|(pos_centre_y<(c-(n_px-1)/2)))=inf;
-%     pos_centre_y((pos_centre_y>(c+(n_px-1)/2))|(pos_centre_y<(c-(n_px-1)/2)))=inf;
-    
+    % create events mask for profile
+    prof_t_evnts_m = false(size(croppedDataProfile,2),1);
+    for i=1:length(statEventsSpRec)
+        prof_t_evnts_m(statEventsSpRec(i).SubarrayIdx{2}, 1) = true;
+    end
     % circles size
     cSz = profileAnalysis.peaksCircleSz;
     t = imgData.t;
-    prof_t = get(findobj(hObjs.ax_prof,'Type','Line','Color','k'),'YData');
-    
+    prof_t = get(findobj(hObjs.ax_prof, 'Type','Line', 'Color','k'),'YData');  
 catch
     return
-    
 end
 
 
@@ -65,7 +52,6 @@ switch  h_O.Type
         switch event.Button
             
             case 1
-               
                 % create and mark new peak 
                 
                 point_pos = h_O.CurrentPoint;
@@ -101,10 +87,11 @@ switch  h_O.Type
                     return
                 end
                                
-                h_circle = line(p_t,p_v,'Parent',h_O,'Color','r',...
-                    'LineStyle','none','Marker','.','MarkerSize',cSz,'PickableParts','all',...
-                    'ButtonDownFcn',{@profileROIButtonDownFcn,mainFig});
-                               
+                h_circle = line(p_t, p_v, 'Parent',h_O, ...
+                    'Color','r', 'LineStyle','none', ...
+                    'Marker','.', 'MarkerSize',cSz, ...
+                    'PickableParts','all',...
+                    'ButtonDownFcn',{@profileROIButtonDownFcn,mainFig});               
                 h_circ_n = [h_PeaksCirc; h_circle];
                 
                 posOfEvents = [posOfEvents;[p_v,p_t]];
@@ -121,8 +108,10 @@ switch  h_O.Type
                 locs = locs(index);
                 delete(h_FitLine);
                                
-                [h_line_n,detectedEventsMask_n,coef_n,~,startOfSpark,endOfSpark] = ...
-                    fitSparkRise(pxSzT,t,prof_t,pks,locs,h_O,fitCoefSparkRise,1e-3,400,smooth_span,bs_crit,[],[]);
+                [h_line_n, detectedEventsMask_n, coef_n, ~,... 
+                    startOfSpark,endOfSpark] = fitSparkRise(pxSzT, ...
+                    t, prof_t, pks, locs, h_O, fitCoefSparkRise, ...
+                    1e-3, 400, smooth_span, bs_crit, [], [], prof_t_evnts_m);
                               
                 profileAnalysis.fitCoefSparkRise = coef_n;
                 profileAnalysis.h_FitLine = h_line_n;
@@ -169,8 +158,11 @@ switch  h_O.Type
                             delete(h_FitLine);
                             
                             % new fits of peaks                           
-                            [h_line_n,detectedEventsMask_n,coef_n,~,startOfSpark,endOfSpark] = ...
-                                fitSparkRise(pxSzT,t,prof_t,pks,locs,h_O.Parent,fitCoefSparkRise,1e-3,400,smooth_span,bs_crit,[],[]);
+                            [h_line_n, detectedEventsMask_n, coef_n, ~, ...
+                                startOfSpark, endOfSpark] = fitSparkRise( ...
+                                pxSzT, t, prof_t, pks, locs, h_O.Parent, ...
+                                fitCoefSparkRise, 1e-3, 400, ...
+                                smooth_span, bs_crit, [], [], prof_t_evnts_m);
                             
                             profileAnalysis.fitCoefSparkRise = coef_n;
                             profileAnalysis.h_FitLine = h_line_n;
@@ -271,7 +263,7 @@ switch  h_O.Type
                         delete(h_FitLine);                        
                         
                         [h_line_n,detectedEventsMask_n,coef_n,~,startOfSpark,endOfSpark] = ...
-                            fitSparkRise(pxSzT,t,prof_t,pks,locs,h_O.Parent,fitCoefSparkRise,1e-3,400,smooth_span,bs_crit,[],[]);
+                            fitSparkRise(pxSzT,t,prof_t,pks,locs,h_O.Parent,fitCoefSparkRise,1e-3,400,smooth_span,bs_crit,[],[], prof_t_evnts_m);
                         
                         profileAnalysis.fitCoefSparkRise = coef_n;
                         profileAnalysis.h_FitLine = h_line_n;

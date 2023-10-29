@@ -31,7 +31,8 @@ if isfield(sparkDetection,'maskOfAcceptedSparks')
     sparkDetection = rmfield(sparkDetection,'maskOfAcceptedSparks');
 end
 
-% check if use normalized image or filtered raw
+% check if use normalized image or filtered raw image to calculate spark
+% parameters
 if hObjs.check_useNormalizedImg.Value
     img = imgData.imgDataXTfluoFN;
 else
