@@ -21,31 +21,17 @@ wRoi = 2000; % ms
 if diff(ax_img.XLim) < wRoi
     wRoi = diff(ax_img.XLim)/2;
 end
-
-h_rect = imrect(ax_img,[ax_img.XLim(1) ax_img_yLim(1) wRoi ax_img_yLim(2)]);
-
+h_rect = drawrectangle(ax_img, ...
+    'Position',[ax_img.XLim(1) ax_img_yLim(1) wRoi ax_img_yLim(2)]);
 switch eventType
     case 'wave'
-        setColor(h_rect,'r')
-        
+        h_rect.Color = 'r';       
     case 'transient'
-        setColor(h_rect,'k')
-        
+        h_rect.Color = 'k';        
     case 'caffeine'
-        setColor(h_rect,'g')    
+        h_rect.Color = 'g';
 end
     
-% constrains for ROI
-% use constrains from image, in axes
-imgInAxes = findall(ax_img,'Type','image');
-try
-    fcn = makeConstrainToRectFcn('imrect',imgInAxes.XData,imgInAxes.YData);
-catch
-    fcn = makeConstrainToRectFcn('imrect',ax_img.XLim,ax_img.YLim);
-end
-setPositionConstraintFcn(h_rect,fcn); 
-setResizable(h_rect,1);
-
 % change pushbutton
 set(hObjs.h_push_eventImgROI,'String','<html> <p align="center"> get image <br> of event <html>')
 set(hObjs.h_push_eventImgROI,'Callback',{@getImageData,mainFig,h_rect})

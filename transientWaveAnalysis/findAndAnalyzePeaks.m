@@ -85,32 +85,34 @@ end
   
 
 if isAnalyzed
-    
     if any(strcmp({'wave','caffeine'}, selectedEvent.type))
-        
         % clear axes
         delete(hObjsA.ax_detEvent.Children)
         delete(hObjsA.ax_deskewed.Children)
-        
         % show analysis
-        image(eventImg,'YData',[min(x) max(x)],...
+        image(eventImg, ...
+            'YData',[min(x) max(x)],...
             'XData',[min(t) max(t)],...
-            'CDataMapping','scaled','Parent',hObjsA.ax_detEvent);
-        set(hObjsA.ax_detEvent,'YGrid','off','FontSize',14)
-        set(get(hObjsA.ax_detEvent,'Ylabel'),'String','x (\mum)','FontWeight','bold')
-        set(get(hObjsA.ax_detEvent,'Xlabel'),'String','t (ms)','FontWeight','bold')
-        set(get(hObjsA.ax_detEvent,'title'),'String','detected event','FontWeight','bold')
+            'CDataMapping','scaled', 'Parent',hObjsA.ax_detEvent);
+        set(hObjsA.ax_detEvent, 'YGrid','off', 'FontSize',14)
+        set(get(hObjsA.ax_detEvent,'Ylabel'), ...
+            'String','x (\mum)', 'FontWeight','bold')
+        set(get(hObjsA.ax_detEvent,'Xlabel'), ...
+            'String','t (ms)', 'FontWeight','bold')
+        set(get(hObjsA.ax_detEvent,'title'), ...
+            'String','detected event', 'FontWeight','bold')
         
-        image(eventImgDeskewed,'YData',[min(x) max(x)],...
+        image(eventImgDeskewed, ...
+            'YData',[min(x) max(x)],...
             'XData',[min(t) max(t)],...
-            'CDataMapping','scaled','Parent',hObjsA.ax_deskewed);
-        set(hObjsA.ax_deskewed,'XTick',[],'YGrid','off','FontSize',14)
-        set(get(hObjsA.ax_deskewed,'Ylabel'),'String','x (\mum)','FontWeight','bold')
-        set(get(hObjsA.ax_deskewed,'title'),'String','deskewed event','FontWeight','bold')
-        
+            'CDataMapping','scaled', 'Parent',hObjsA.ax_deskewed);
+        set(hObjsA.ax_deskewed, 'XTick',[], 'YGrid','off', 'FontSize',14)
+        set(get(hObjsA.ax_deskewed,'Ylabel'), ...
+            'String','x (\mum)', 'FontWeight','bold')
+        set(get(hObjsA.ax_deskewed,'title'), ...
+            'String','deskewed event', 'FontWeight','bold')
         % set x axis
-        hObjsA.ax_detEvent.XLim = [min(t) max(t)];
-         
+        hObjsA.ax_detEvent.XLim = [min(t) max(t)]; 
     end
     
     % delete previous fits and lines
@@ -118,50 +120,27 @@ if isAnalyzed
     delete(findall(axRes,'Tag','splineFitRes'))
     delete(findall(ax,'Tag','fitLineRise'))
     delete(findall(ax,'Tag','profile'))
-    delete(findall(ax,'Tag','photolyticPulses'))
     
     % plot data and fit with spline
-    line(t,y,'Parent',ax,'Color',[0 0 0 0.50],'LineStyle','-','LineWidth',1,'Tag','profile');
-    line(t,splFit,'Parent',ax,'Color',[1 0 0 0.75],'LineStyle','-','LineWidth',2,'Tag','splineFit');
-    line(t,splFit-y,'Parent',axRes,'Color',[0 0 0],'LineStyle','-','LineWidth',1,'Tag','splineFitRes');
-  
-    % show photolytic pulses positions if there are any
-    if isfield(imgData,'s_TPP')
-        
-        s_TPP  = imgData.s_TPP;
-        e_TPP = imgData.e_TPP;
-        
-        if ~isempty(s_TPP)
-            
-            Xpp = [t(s_TPP);
-                t(e_TPP);
-                t(e_TPP);
-                t(s_TPP)];
-            
-            Ypp = [ones(size(s_TPP)).*min(ax.YLim);
-                ones(size(s_TPP)).*min(ax.YLim);
-                ones(size(s_TPP)).*max(ax.YLim);
-                ones(size(s_TPP)).*max(ax.YLim)];
-            
-            patch('XData',Xpp, 'YData',Ypp, 'Parent',ax, 'Tag','photolyticPulses',...
-                'FaceColor','r', 'FaceAlpha',0.5, 'EdgeColor','none')
-        end
-        
-    end
-    
-    
+    line(t, y, 'Parent',ax, 'Color',[0 0 0 0.50], ...
+        'LineStyle','-', 'LineWidth',1, 'Tag','profile');
+    line(t, splFit, 'Parent',ax, 'Color',[1 0 0 0.75], ...
+        'LineStyle','-', 'LineWidth',2, 'Tag','splineFit');
+    line(t, splFit-y, 'Parent',axRes, 'Color',[0 0 0], ...
+        'LineStyle','-', 'LineWidth',1, 'Tag','splineFitRes');
 else
-  
     % get spline fit params
-    nK = str2double( hObjsA.h_edit_paramFit1.String );
-    splOrd = str2double( hObjsA.h_edit_paramFit2.String );
+    nK = str2double(hObjsA.h_edit_paramFit1.String);
+    splOrd = str2double(hObjsA.h_edit_paramFit2.String);
     
-    [splFit,splFitUps,t_ups] = fitWithSpline(t,y,nK,splOrd,pxSzT,[]);
+    [splFit, splFitUps, t_ups] = fitWithSpline(t, y, nK, splOrd, pxSzT, []);
     
     % find peaks
     N_events = str2double( hObjsA.h_edit_Npeaks.String );
-    [pks,locs,w,p] = findpeaks(splFit,t,'SortStr','descend',...
-        'MinPeakDistance',100,'NPeaks',N_events);
+    [pks, locs, w, p] = findpeaks(splFit, t, ...
+        'SortStr','descend',...
+        'MinPeakDistance',100, ...
+        'NPeaks',N_events);
     
     % sort peaks based on location
     [locs,I] = sort(locs);
@@ -170,7 +149,7 @@ else
     p = p(I);
     
     % delete previous fits and lines
-    delete(findall(ax,'Tag','fitLineRise'))
+    delete(findall(ax, 'Tag', 'fitLineRise'))
     
     % get selection of breaks positions for fitting 
     if isfield(selectedEvent,'expFitS') && N_events<2
@@ -190,47 +169,26 @@ else
     bs_crit = str2double( hObjsA.h_edit_bsSens.String );
     smoothSpan = str2double( hObjsA.h_edit_knotsSpan.String );
     % parameters: [t0, tauR, A, bs]
-    [h_lineFitEventRise,coefFitEventRise,sp_fit,startOfEvent] = ...
-        fitEventRise(pxSzT,t,y,splFit,pks,locs,ax,[],10E-9,1000,...
-        smoothSpan,bs_crit,posOfSelPoints);
+    [h_lineFitEventRise, coefFitEventRise, sp_fit, startOfEvent] = ...
+        fitEventRise(pxSzT, t, y, splFit, pks, locs, ax, [], 10E-9, 1000,...
+        smoothSpan, bs_crit, posOfSelPoints);
     
     % refit with spline, to get better estimate of rise of event
-    [splFit,splFitUps,t_ups] = fitWithSpline(t,y,nK,splOrd,pxSzT,coefFitEventRise);
+    [splFit,splFitUps,t_ups] = fitWithSpline(t, y, ...
+        nK, splOrd, pxSzT, coefFitEventRise);
     
     % delete previous fits and lines
     delete(findall(ax,'Tag','splineFit'))
     delete(findall(axRes,'Tag','splineFitRes'))
     delete(findall(ax,'Tag','profile'))
-    delete(findall(ax,'Tag','photolyticPulses'))
     
     % plot fit with spline
-    line(t,y,'Parent',ax,'Color',[0 0 0 0.50],'LineStyle','-','LineWidth',1,'Tag','profile');
-    line(t,splFit,'Parent',ax,'Color',[1 0 0 0.75],'LineStyle','-','LineWidth',2,'Tag','splineFit');
-    line(t,splFit-y,'Parent',axRes,'Color',[0 0 0],'LineStyle','-','LineWidth',1,'Tag','splineFitRes');
-    
-    % show photolytic pulses positions if there are any
-    if isfield(imgData,'s_TPP')
-        
-        s_TPP  = imgData.s_TPP;
-        e_TPP = imgData.e_TPP;
-        
-        if ~isempty(s_TPP)
-            
-            Xpp = [t(s_TPP);
-                t(e_TPP);
-                t(e_TPP);
-                t(s_TPP)];
-            
-            Ypp = [ones(size(s_TPP)).*min(ax.YLim);
-                ones(size(s_TPP)).*min(ax.YLim);
-                ones(size(s_TPP)).*max(ax.YLim);
-                ones(size(s_TPP)).*max(ax.YLim)];
-            
-            patch('XData',Xpp, 'YData',Ypp, 'Parent',ax, 'Tag','photolyticPulses',...
-                'FaceColor','r', 'FaceAlpha',0.5, 'EdgeColor','none')
-        end
-        
-    end
+    line(t, y, 'Parent',ax, 'Color',[0 0 0 0.50], ...
+        'LineStyle','-', 'LineWidth',1, 'Tag','profile');
+    line(t, splFit, 'Parent',ax, 'Color',[1 0 0 0.75], ...
+        'LineStyle','-', 'LineWidth',2, 'Tag','splineFit');
+    line(t, splFit-y, 'Parent',axRes, 'Color',[0 0 0], ...
+        'LineStyle','-', 'LineWidth',1, 'Tag','splineFitRes');
     
     % put exp. rise fits on top
     uistack(h_lineFitEventRise,'up',2)
@@ -238,21 +196,17 @@ else
     % check if there is big axes window and also selection markers for expD
     % fitting
     if isfield(selectedEvent,'expFitS')
-
         % calculate phenomenological parameters of events from spline fit
-        eventsParams = calcParametersOfEventsFromWholeProfileFit...
+        eventsParams = calcParametersOfGlobalEventsFromWholeProfileFit...
             (t,splFit,t_ups,splFitUps,coefFitEventRise,startOfEvent,N_events,...
             pks,locs,selectedEvent.expFitS,selectedEvent.expFitE);
-        
         % move markers to top in axes
-        uistack(findall(ax,'Tag','expFitSelPoints'),'top')
-        
+        uistack(findall(ax,'Tag','expFitSelPoints'),'top')     
     else
         % calculate phenomenological parameters of events from spline fit
-        eventsParams = calcParametersOfEventsFromWholeProfileFit...
+        eventsParams = calcParametersOfGlobalEventsFromWholeProfileFit...
             (t,splFit,t_ups,splFitUps,coefFitEventRise,startOfEvent,N_events,...
-            pks,locs,[],[]);
-        
+            pks,locs,[],[]);    
     end
     
 end
@@ -263,49 +217,53 @@ delete(findall(ax,'Tag','params'))
 try
     for i=2:size(eventsParams,1)
         
-        line([eventsParams{i,1} eventsParams{i,3}],[eventsParams{i,2} eventsParams{i,2}],...
-            'Parent',ax,'Color','b','LineStyle','-','LineWidth',2,...
+        line([eventsParams{i,1} eventsParams{i,3}], ...
+            [eventsParams{i,2} eventsParams{i,2}],...
+            'Parent',ax, 'Color','b', 'LineStyle','-', ...
+            'LineWidth',2, 'Tag','params')
+        line([eventsParams{i,4} eventsParams{i,5}], ...
+            [eventsParams{i,6} eventsParams{i,6}],...
+            'Parent',ax, 'Color','b', 'LineStyle','-', 'LineWidth',2,...
             'Tag','params')
-        line([eventsParams{i,4} eventsParams{i,5}],[eventsParams{i,6} eventsParams{i,6}],...
-            'Parent',ax,'Color','b','LineStyle','-','LineWidth',2,...
+        line([eventsParams{i,3} eventsParams{i,3}], ...
+            [eventsParams{i,2} eventsParams{i,7}],...
+            'Parent',ax, 'Color','b', 'LineStyle','-', 'LineWidth',2,...
             'Tag','params')
-        line([eventsParams{i,3} eventsParams{i,3}],[eventsParams{i,2} eventsParams{i,7}],...
-            'Parent',ax,'Color','b','LineStyle','-','LineWidth',2,...
-            'Tag','params')
-        line(eventsParams{i,15}(:,1), eventsParams{i,15}(:,2),...
-            'Parent',ax,'Color','b','LineStyle',':','LineWidth',2,...
-            'Tag','params')
-        
+        line(eventsParams{i,15}(:,1), ...
+            eventsParams{i,15}(:,2),...
+            'Parent',ax, 'Color','b', 'LineStyle',':', 'LineWidth',2,...
+            'Tag','params')  
     end
 catch
 end
 % set up axes
-set(ax,'FontSize',14,'YGrid','on')
-set(get(ax,'Ylabel'),'String','fluorescence (\DeltaF/F0)','FontWeight','bold')
-set(get(ax,'Xlabel'),'String','t (ms)','FontWeight','bold')
+set(ax, 'FontSize',14, 'YGrid','on')
+set(get(ax,'Ylabel'), 'String','fluorescence (\DeltaF/F0)', ...
+    'FontWeight','bold')
+set(get(ax,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
 
-set(axRes,'YGrid','on','FontSize',14)
-set(get(axRes,'Ylabel'),'String','residuals','FontWeight','bold')
-set(get(axRes,'Xlabel'),'String','t (ms)','FontWeight','bold')
+set(axRes, 'YGrid','on', 'FontSize',14)
+set(get(axRes,'Ylabel'), 'String','residuals', 'FontWeight','bold')
+set(get(axRes,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
 
 % set axes limits
 ax.XLim = [min(t) max(t)];
-ax.YLim = [min([splFit(:);y(:)])*0.95 max([splFit(:);y(:)])*1.05];
+ax.YLim = getAxisLimits([splFit(:);y(:)],5);
 axRes.XLim = ax.XLim;
 
 % parameters in text to show
 if size(eventsParams,1)==2
-    text(ax,t(end-5),max(y),{[sprintf('Amplitude: %0.2f',eventsParams{2,8}),'  \DeltaF/F_0'];...
+    text(ax, t(end-5), max(y), ...
+        {[sprintf('Amplitude: %0.2f',eventsParams{2,8}),'  \DeltaF/F_0'];...
         sprintf('TTP: %0.2f ms',eventsParams{2,9});...
         sprintf('FDHM: %0.2f ms',eventsParams{2,10});...
         sprintf('tauD fit: %0.2f ms',eventsParams{2,12});...
         sprintf('tauD median pxWise: %0.2f ms',tauD_regionWiseMed);...
         [sprintf('wave speed: %0.2f',waveSpeed),' \mum/s']},...
-        'VerticalAlignment','top','Tag','params',...
+        'VerticalAlignment','top', 'Tag','params',...
         'HorizontalAlignment','right',...
         'FontSize',14)
 end
-
 
 if ~isAnalyzed
     % save data
@@ -313,18 +271,13 @@ if ~isAnalyzed
     fitOfEvent.calcParamsFromFit = eventsParams;
     
     switch selectedEvent.type
-        
         case 'wave'
-            selectedEvent.analysis.waveAnalysis.fitOfEvent = fitOfEvent;
-            
+            selectedEvent.analysis.waveAnalysis.fitOfEvent = fitOfEvent; 
         case 'transient'
             selectedEvent.analysis.transientAnalysis.fitOfEvent = fitOfEvent;
-            
         case 'caffeine'
-            selectedEvent.analysis.caffeineAnalysis.fitOfEvent = fitOfEvent;
-            
+            selectedEvent.analysis.caffeineAnalysis.fitOfEvent = fitOfEvent;   
     end
-    
     setappdata(analysisFig,'selectedEvent',selectedEvent)
 end
 

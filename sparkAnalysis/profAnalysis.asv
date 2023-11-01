@@ -316,7 +316,7 @@ plotProfileAnalysis1(t, selectedROIs, pxSzX)
 
 % plot result from analysis using whole profile fit
 if any(strcmp(selectedROIs.Properties.VariableNames, 'wholeProfileFit'))
-    plotProfileAnalysis2(t, selectedROIs, pxSzX,pairwise)
+    plotProfileAnalysis2(t, selectedROIs, pxSzX)
 end
 
 % remove empty axes
@@ -327,7 +327,6 @@ delete(h_a(h_a_d))
 
 
 % save data
-profileAnalysis.pairwise = pairwise;
 profileAnalysis.TPP_delays = TPP_delays;
 
 setappdata(mainFig,'profileAnalysis',profileAnalysis)

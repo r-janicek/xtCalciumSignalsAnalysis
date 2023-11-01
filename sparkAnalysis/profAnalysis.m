@@ -312,11 +312,11 @@ setappdata(mainFig,'profileAnalysis',profileAnalysis)
 
 % plot result from analysis using fitting only rise part of each
 % event
-plotProfileAnalysis1(t, selectedROIs, pxSzX, pairwise)
+plotProfileAnalysis1(t, selectedROIs, pxSzX)
 
 % plot result from analysis using whole profile fit
 if any(strcmp(selectedROIs.Properties.VariableNames, 'wholeProfileFit'))
-    plotProfileAnalysis2(t, selectedROIs, pxSzX,pairwise)
+    plotProfileAnalysis2(t, selectedROIs, pxSzX)
 end
 
 % remove empty axes
@@ -325,23 +325,16 @@ h_a = findobj(h_f,'Type','axes');
 h_a_d = arrayfun(@(x) isempty(x.Children),h_a);
 delete(h_a(h_a_d))
 
-
 % save data
-profileAnalysis.pairwise = pairwise;
-profileAnalysis.TPP_delays = TPP_delays;
-
 setappdata(mainFig,'profileAnalysis',profileAnalysis)
-
 
 % mouse cursor
 set(mainFig,'Pointer','arrow')
 drawnow
 
-
 %%%%%%%%%%%%
 saveSparkRecAnalysis([],[],mainFig)
 %%%%%%%%%%%%
-
 
 end
 

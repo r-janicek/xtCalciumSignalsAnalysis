@@ -1,7 +1,6 @@
-function fitNum_slider(h_sld,~,analysisFig)
+function fitNum_slider(h_sld, ~, analysisFig)
 
-mainFig
-
+mainFig = findobj(0, 'Type','figure', 'Tag','mainFig');
 switch getappdata(mainFig,'analysisType')
     case {'spark recovery ryanodine', 'spark detection'}
         % get data
@@ -26,50 +25,45 @@ switch getappdata(mainFig,'analysisType')
             isFitted = false;
         end
 
-
         if isFitted
-
             % only show fit
             fitData = profileAnalysis.selectedROIs.wholeProfileFit{h_sld.Value};
 
             % delete previous mask, profile, baseline fit and events fit
-            delete(findobj(hObjsFit.ax_fit,'Type','Line','-regexp','Tag','Mask'))
-            delete(findobj(hObjsFit.ax_fit,'Type','Line','-regexp','Tag','profile'))
-            delete(findobj(hObjsFit.ax_fit,'Tag','baselineFit'))
-            delete(findobj(hObjsFit.ax_fit,'Tag','eventsFit'))
-            delete(findobj(hObjsFit.ax_fit,'Type','Line','-regexp','Tag','selectedPeaks'))
+            delete(findobj(hObjsFit.ax_fit, 'Type','Line', ...
+                '-regexp','Tag','Mask'))
+            delete(findobj(hObjsFit.ax_fit, 'Type','Line', ...
+                '-regexp','Tag','profile'))
+            delete(findobj(hObjsFit.ax_fit, 'Tag','baselineFit'))
+            delete(findobj(hObjsFit.ax_fit, 'Tag','eventsFit'))
+            delete(findobj(hObjsFit.ax_fit, 'Type','Line', ...
+                '-regexp','Tag','selectedPeaks'))
 
             % show normalized profile
-            line(fitData.t,fitData.yN,'Parent',hObjsFit.ax_fit,'Color','k','LineStyle','-','LineWidth',1,...
+            line(fitData.t, fitData.yN, 'Parent',hObjsFit.ax_fit, ...
+                'Color','k', 'LineStyle','-', 'LineWidth',1,...
                 'Tag','profile');
-            set(get(hObjsFit.ax_fit,'Ylabel'),'String',['profile (', (char(916)),'F/F0'])
-
+            set(get(hObjsFit.ax_fit,'Ylabel'), ...
+                'String',['profile (', (char(916)),'F/F0'])
             % set ylimits
-            ymin = min(fitData.yN);
-            if ymin<0
-                ymin = ymin*1.05;
-            else
-                ymin = ymin*0.95;
-            end
-
-            set(hObjsFit.ax_fit,'XLim',[fitData.t(1) fitData.t(end)],'YLim',[ymin max(fitData.yN)*1.05])
-
+            set(hObjsFit.ax_fit, ...
+                'XLim',[fitData.t(1) fitData.t(end)], ...
+                'YLim',getAxisLimits(fitData.yN, 5))
             % show fit of profile
-            line(fitData.t,fitData.profFit.wholeFit,'Parent',hObjsFit.ax_fit,'Color','r','LineStyle','-','LineWidth',2,...
+            line(fitData.t, fitData.profFit.wholeFit, ...
+                'Parent',hObjsFit.ax_fit, 'Color','r', ...
+                'LineStyle','-', 'LineWidth',2,...
                 'Tag','eventsFit');
-
             % plot residuals
-            delete(findobj(hObjsFit.ax_res,'Tag','residuals'))
-            line(fitData.t,fitData.yN-fitData.profFit.wholeFit,'Parent',hObjsFit.ax_res,'Color','k','LineStyle','-','LineWidth',1,...
+            delete(findobj(hObjsFit.ax_res, 'Tag','residuals'))
+            line(fitData.t, fitData.yN-fitData.profFit.wholeFit, ...
+                'Parent',hObjsFit.ax_res, 'Color','k', ...
+                'LineStyle','-', 'LineWidth',1,...
                 'Tag','residuals');
             % set ylimit
-            ymin = min(fitData.yN-fitData.profFit.wholeFit);
-            if ymin<0
-                ymin = ymin*1.05;
-            else
-                ymin = ymin*0.95;
-            end
-            set(hObjsFit.ax_res,'XLim',[fitData.t(1) fitData.t(end)],'YLim',[ymin max(fitData.yN-fitData.profFit.wholeFit)*1.05])
+            set(hObjsFit.ax_res, ...
+                'XLim',[fitData.t(1) fitData.t(end)], ...
+                'YLim',getAxisLimits(fitData.yN-fitData.profFit.wholeFit, 5))
 
             % disable baseline fitting
             hObjsFit.popUpMenuBs.Enable = 'off';
@@ -88,29 +82,35 @@ switch getappdata(mainFig,'analysisType')
             hObjsFit.h_pb_acceptFit.Enable = 'off';
 
         else
-
             % get selected profile data
-            prof = getSelectedProfileData(h_sld.Value,imgData,profileAnalysis,getappdata(mainFig,'analysisType'));
+            prof = getSelectedProfileData(h_sld.Value, ...
+                imgData, profileAnalysis, ...
+                getappdata(mainFig,'analysisType'));
 
             % save data
-            setappdata(analysisFig,'selectedProf',prof)
+            setappdata(analysisFig, 'selectedProf', prof)
 
             % set up window
             % show selected profile
             delete(hObjsFit.ax_fit.Children)
             delete(hObjsFit.ax_res.Children)
 
-            line(prof.t,prof.y,'Parent',hObjsFit.ax_fit,'Color','k','LineStyle','-','LineWidth',1,...
+            line(prof.t, prof.y, 'Parent',hObjsFit.ax_fit, ...
+                'Color','k', 'LineStyle','-', 'LineWidth',1,...
                 'Tag','profile');
-            set(hObjsFit.ax_fit,'XLim',[prof.t(1) prof.t(end)],'YLim',[min(prof.y)*0.95 max(prof.y)*1.05])
-            set(get(hObjsFit.ax_fit,'Ylabel'),'String','profile (F)','FontWeight','bold')
+            set(hObjsFit.ax_fit, ...
+                'XLim',[prof.t(1) prof.t(end)], ...
+                'YLim',getAxisLimits(prof.y, 5))
+            set(get(hObjsFit.ax_fit,'Ylabel'), ...
+                'String','profile (F)', 'FontWeight','bold')
 
             % show selected peaks
-            line([prof.eventsPeaks{:,2}],ones(size([prof.eventsPeaks{:,2}])).*hObjsFit.ax_fit.YLim(2),...
-                'Parent',hObjsFit.ax_fit,'Color','r','LineStyle','none','LineWidth',1,...
-                'Marker','.','MarkerSize',profileAnalysis.peaksCircleSz,'Tag','selectedPeaks');
-
-
+            line([prof.eventsPeaks{:,2}], ...
+                ones(size([prof.eventsPeaks{:,2}])).*hObjsFit.ax_fit.YLim(2),...
+                'Parent',hObjsFit.ax_fit, 'Color','r', ...
+                'LineStyle','none', 'LineWidth',1, 'Marker','.', ...
+                'MarkerSize',profileAnalysis.peaksCircleSz, ...
+                'Tag','selectedPeaks');
             % enable baseline fitting
             set(hObjsFit.popUpMenuBs,'Enable','on')
             set(hObjsFit.h_edit_paramFitBs1,'Enable','on')
@@ -129,8 +129,9 @@ switch getappdata(mainFig,'analysisType')
 
             % do fitting of baseline
             fitBaseline([],[],analysisFig)
-
         end
+
+
     case 'transients & waves'
         %% get data
         mainFig = getappdata(analysisFig,'mainFig');
@@ -166,7 +167,7 @@ switch getappdata(mainFig,'analysisType')
         end
 
         % save selected event
-        setappdata(analysisFig,'selectedEvent',selectedEvent)
+        setappdata(analysisFig, 'selectedEvent', selectedEvent)
 
         % set up window for fitting
         hObjsA.h_edit_paramFit1.String = ...
@@ -178,33 +179,35 @@ switch getappdata(mainFig,'analysisType')
 
         %% show filtered and normalized image of selected event
         % clear axes
-        arrayfun(@(x) cla(x),findobj(analysisFig,'Type','axes'))
+        arrayfun(@(x) cla(x), findobj(analysisFig, 'Type','axes'))
 
         % show image
         image(selectedEvent.ROIdata.dataROIs.imgFN,...
-            'YData',[min(selectedEvent.ROIdata.dataROIs.x) max(selectedEvent.ROIdata.dataROIs.x)],...
-            'XData',[min(selectedEvent.ROIdata.dataROIs.t) max(selectedEvent.ROIdata.dataROIs.t)],...
-            'CDataMapping','scaled','Parent',hObjsA.ax_orgImg);
-        set(hObjsA.ax_orgImg,'XTick',[],'YGrid','off','FontSize',14)
-        set(get(hObjsA.ax_orgImg,'Ylabel'),'String','x (\mum)','FontWeight','bold')
-        set(get(hObjsA.ax_orgImg,'title'),'String','image filtered and normalized','FontWeight','bold')
-
+            'YData',[min(selectedEvent.ROIdata.dataROIs.x) ...
+                     max(selectedEvent.ROIdata.dataROIs.x)],...
+            'XData',[min(selectedEvent.ROIdata.dataROIs.t) ...
+                     max(selectedEvent.ROIdata.dataROIs.t)],...
+            'CDataMapping','scaled', 'Parent',hObjsA.ax_orgImg);
+        set(hObjsA.ax_orgImg, 'XTick',[], 'YGrid','off', 'FontSize',14)
+        set(get(hObjsA.ax_orgImg,'Ylabel'), 'String','x (\mum)', ...
+            'FontWeight','bold')
+        set(get(hObjsA.ax_orgImg,'title'), ...
+            'String','image filtered and normalized', 'FontWeight','bold')
 
         %% analyze image or show already analyzed image and accepted analysis
         if isAnalyzed
             % just show resutls, use analyze peaks function without fitting
-            findAndAnalyzePeaks([],[],analysisFig)
-
+            findAndAnalyzePeaks([], [], analysisFig)
         else
             % do whole analysis
-            analyzeEvent([],[],analysisFig);
-
+            analyzeEvent([], [], analysisFig);
         end
 
-
         %% set up analysis window
-        hObjsA.h_txt_fitNum.String = sprintf('analysis of event #%d:  %s',h_sld.Value,roiName);
-        hObjsA.h_txt_fitNumSld.String = sprintf('event #%d;  %s',h_sld.Value,roiName);
+        hObjsA.h_txt_fitNum.String = ...
+            sprintf('analysis of event #%d:  %s', h_sld.Value, roiName);
+        hObjsA.h_txt_fitNumSld.String = ...
+            sprintf('event #%d;  %s', h_sld.Value, roiName);
 
         if isAnalyzed
             % set up window
@@ -258,10 +261,6 @@ switch getappdata(mainFig,'analysisType')
 
         end
 
-
 end
-
-
-
 
 end

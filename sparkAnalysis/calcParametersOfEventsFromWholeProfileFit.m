@@ -1,4 +1,4 @@
-function params = calcParametersOfEventsFromWholeProfileFit(x_t,fitData)
+function params = calcParametersOfEventsFromWholeProfileFit(x_t, fitData)
 % profile is normalized
 % calculate parameters:
 % [t0 (start of event), tPeak (time pos of peak), 

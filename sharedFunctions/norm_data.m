@@ -14,7 +14,7 @@ imgDataXTfluoF = imgData.imgDataXTfluoF;
 ax_img_yLim = get(ax_img, 'YLim');
 % if baseline fitting is selected do not draw rectangle to select area to
 % calculate F0
-if hObjs.check_bsFit.Value
+if hObjs.check_doBsFit.Value
     set(hObjs.h_pb_norm, 'String','normalizing')
     set(hObjs.h_pb_norm, 'FontWeight','bold')
     norm_calc([],[],mainFig,[])

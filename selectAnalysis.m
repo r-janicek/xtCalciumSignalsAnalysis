@@ -53,12 +53,13 @@ switch hO.String
                     '5 uM EGTA AM'; ...
                     '50 nM ryanodine';''})
                           
-    case 'transients & waves'
+    case 'calcium transients & waves'
         % add folder with functions needed for analysis
         addpath(genpath(fullfile(wd_path,'/transientWaveAnalysis')))
         % start main window
         MainWindowTansientAndWaves;
-        hf = findall(0, 'Type','figure', 'Tag','transients & waves');
+        hf = findall(0, 'Type','figure', 'Tag','mainFig', ...
+            'Name','transients and waves analysis');
         % save type of analysis       
         setappdata(hf,'analysisType','transients & waves'); 
 end 

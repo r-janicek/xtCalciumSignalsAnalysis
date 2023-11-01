@@ -96,9 +96,10 @@ if imgData.norm_flag==1
         case 'transients & waves'
             % reset buttons for ROIs and table
             delete(findobj(ax_img,'Tag','imrect'))
-            set(hObjs.h_push_eventImgROI,'String','<html> <p align="center"> ROI to select image <br> of event <html>')
-            set(hObjs.h_push_eventImgROI,'Callback',{@selectEventImage, mainFig})
-            set(hObjs.h_push_eventImgROI,'FontWeight','normal')
+            set(hObjs.h_push_eventImgROI, ...
+                'String','<html> <p align="center"> ROI to select image <br> of event <html>')
+            set(hObjs.h_push_eventImgROI, 'FontWeight','normal', ...
+                'Callback',{@selectEventImage, mainFig})
             set(hObjs.h_table_eventsImgs,'Data',repmat({'----'},[5,1]))
 
             % set up window
@@ -118,6 +119,11 @@ if imgData.norm_flag==1
 
             % mouse baseline selection tool
             set(hObjs.ax_prof, 'buttondownfcn',@mouseSetMaskFcn)
+            % remove analysis
+            if isfield(getappdata(mainFig),'selectedROIs')
+                rmappdata(mainFig,'selectedROIs')
+            end
+
     end
     % show not normalized profile of image
     plot(imgData.t, mean(imgData.imgDataXTfluoFN,1), ...

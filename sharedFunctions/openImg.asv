@@ -282,17 +282,13 @@ set(get(hObjs.ax_img,'Ylabel'), 'String','x (px)', ...
 % time profile
 prof_t = mean(imgDataXTfluo, 1);
 % show time profile
-plot(t,prof_t, 'Parent',hObjs.ax_prof);
+plot(t,prof_t, 'Parent',hObjs.ax_prof, 'Tag','wholeCellProfile');
 set(hObjs.ax_prof, 'FontSize',14, 'Tag','profile')
 set(get(hObjs.ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
 set(get(hObjs.ax_prof,'Ylabel'), 'String','Fluorescence (F)', ...
     'FontWeight','bold')
 xlim(hObjs.ax_prof, [min(t) max(t)])
-try
-    ylim(hObjs.ax_prof, [min(prof_t) max(prof_t)])
-catch
-    ylim(hObjs.ax_prof, [min(prof_t) max(prof_t)+1])
-end
+ylim(hObjs.ax_prof, getAxisLimits(prof_t, 5))
 % link axes
 try
     linkaxes([hObjs.ax_img, hObjs.ax_img_sparks, hObjs.ax_prof], 'x')
@@ -353,7 +349,40 @@ switch getappdata(mainFig,'analysisType')
             'String',['# sp*100',char(956),'m-1*s-1'])
         set(hObjs.txt_correctedSpF, ...
             'String',{'#';['sp*100',char(956),'m-1*s-1']})
-        set(hObjs.h_push_DetectSparks, 'Enable','on')
+        set(hObjs.h_push_sparks, 'Enable','on')
+    
+    case 'transients & waves'
+        % set normalization panel
+        set(hObjs.h_pb_norm,'Enable','on')
+        set(hObjs.h_pb_norm,'String','normalize data')
+        set(hObjs.h_pb_norm,'Callback',{@norm_data,mainFig})
+        set(hObjs.h_pb_norm,'FontWeight','normal')
+        % check if baseline fitting is on
+        if hObjs.check_doBsFit.Value
+            hObjs.popUpMenuBaselineFcn.Enable = 'on';     
+                % calculate first mask of baseline
+                sldVal = hObjs.sld_Bs.Value;
+                mBs = prof_t <= prctile(prof_t, sldVal);
+                if strcmp(hObjs.popUpMenuBaselineFcn.String{...
+                        hObjs.popUpMenuBaselineFcn.Value}, 'spline')
+                    mBs(1) = true;
+                    mBs(end) = true;
+                end
+                
+                imgData.baselineM = mBs(:);
+                setappdata(mainFig, 'imgData',imgData);
+                
+                % do fitting of baseline
+                type = hObjs.popUpMenuBaselineFcn.String{...
+                    hObjs.popUpMenuBaselineFcn.Value};
+                bsFitOut = fitBaseline(t, prof, type, mBs, ...
+                    1, hObjs.ax_prof);
+                imgData.bsFit = bsFitOut;
+                setappdata(mainFig,'imgData',imgData);
+        end
+        % setup function to select baseline 
+        set(hObjs.ax_prof, 'buttondownfcn',@mouseSetMaskFcn)
+
     otherwise
         set(hObjs.h_table_profs,'Data',zeros(5,2))
         % set normalization panel
@@ -361,14 +390,13 @@ switch getappdata(mainFig,'analysisType')
         set(hObjs.h_pb_norm,'String','normalize data')
         set(hObjs.h_pb_norm,'Callback',{@norm_data,mainFig})
         set(hObjs.h_pb_norm,'FontWeight','normal')
-        set(hObjs.h_push_DetectSparks, 'Enable','off')
+        set(hObjs.h_push_sparks, 'Enable','off')
         % set up panel for spark recovery
         % set width of ROI for spark recovery to 5 um width in pixels (odd number)
         n_px = round(6/pxSzX);
         if mod(n_px,2)==0
             n_px = n_px+1;
         end
-        
         set(hObjs.h_edit_ROI,'String',num2str(n_px)) 
         % set up panel for spark detection
         % set(hObjs.check_visRect,'Value',1)
@@ -398,10 +426,13 @@ if strcmp(get(hObjs.h_pb_crop,'String'),'crop')
     set(hObjs.h_pb_crop,'String','set ROI for cropping', ...
         'FontWeight','normal')
 end
-% set FWHM for spark detection, in pixels, 2 um
-set(hObjs.h_edit_fFWHM,'String','10')
-% set(hObjs.h_edit_fFWHM,'String',num2str(ceil(2/pxSzX)))
 
+% set FWHM for spark detection, in pixels, 2 um
+try
+    set(hObjs.h_edit_fFWHM,'String','10')
+    % set(hObjs.h_edit_fFWHM,'String',num2str(ceil(2/pxSzX)))
+catch
+end
 % remove old analysis
 if isfield(getappdata(mainFig),'lastPressedPusbutton')
     rmappdata(mainFig,'lastPressedPusbutton');   

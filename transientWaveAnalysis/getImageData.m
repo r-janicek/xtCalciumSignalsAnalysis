@@ -1,4 +1,4 @@
-function getImageData(~,~,mainFig,h_rectROI)
+function getImageData(~, ~, mainFig, h_rectROI)
 
 % get data
 hObjs = getappdata(mainFig,'hObjs');
@@ -8,7 +8,6 @@ hROIsTable = hObjs.h_table_eventsImgs;
 eventType = hObjs.h_bg_eventSelection.SelectedObject.String;
 
 % create name of ROI
-
 try
     numIdxW = cellfun(@(x) str2double(x), cellfun(@(x) regexp(x,'\d*','match'), hROIsTable.Data) );
     numIdxW(cellfun(@(x) isempty(regexp(x,'wave','match')), hROIsTable.Data)) = [];
@@ -94,15 +93,22 @@ end
     
 % get mask of ROI and cropp data
 m_ROI = createMask(h_rectROI);
-[r,c] = find(m_ROI);
+r_t = find(any(m_ROI, 1));
+r_x = find(any(m_ROI, 2));
+if length(r_t)>size(imgData.imgDataXTfluoFN, 2)
+    r_t = r_t(1:size(imgData.imgDataXTfluoFN,2),1);
+end
+if length(r_x)>size(imgData.imgDataXTfluoFN, 1)
+    r_x = r_x(1:size(imgData.imgDataXTfluoFN, 1), 1);
+end
 
-imgROI_F = imgData.imgDataXTfluoF(min(r):max(r),min(c):max(c)); % filtred
-imgROI_FN = imgData.imgDataXTfluoFN(min(r):max(r),min(c):max(c)); % filtred and normalized
+imgROI_F = imgData.imgDataXTfluoF(r_x, r_t); % filtred
+imgROI_FN = imgData.imgDataXTfluoFN(r_x, r_t); % filtred and normalized
 
 t = (0:size(imgROI_FN,2)-1).*imgData.pxSzT;
 x = (0:size(imgROI_FN,1)-1).*imgData.pxSzX;
 
-posROI = {getPosition(h_rectROI)};
+posROI = {h_rectROI.Position};
 dataROI = struct('imgF',imgROI_F,...
                  'imgFN',imgROI_FN,...
                  't',t,...
@@ -160,7 +166,8 @@ else
 end
 
 % sort selectedROIs
-numIdx = cellfun(@(x) str2double(x), cellfun(@(x) regexp(x,'\d*','match'), selectedROIs.roiName) );
+numIdx = cellfun(@(x) str2double(x), ...
+    cellfun(@(x) regexp(x,'\d*','match'), selectedROIs.roiName) );
 [~,I] = sort(numIdx);
 selectedROIs = selectedROIs(I,:);
 
@@ -171,9 +178,10 @@ set(hROIsTable,'Data',selectedROIs.roiName);
 
 % delete ROI, reset pushbuttons
 delete(h_rectROI)
-set(hObjs.h_push_eventImgROI,'String','<html> <p align="center"> ROI to select image <br> of event <html>')
-set(hObjs.h_push_eventImgROI,'Callback',{@selectEventImage,mainFig})
-set(hObjs.h_push_eventImgROI,'FontWeight','normal')
+set(hObjs.h_push_eventImgROI, ...
+    'String','<html> <p align="center"> ROI to select image <br> of event <html>')
+set(hObjs.h_push_eventImgROI, 'FontWeight','normal', ...
+    'Callback',{@selectEventImage,mainFig})
 
 % enable change of type of event
 hObjs.h_b1_eventSelection.Enable = 'on';

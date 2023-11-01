@@ -24,11 +24,13 @@ if isfield(getappdata(mainFig),'batchProcessing')
         file = char([name,'_SparkDetResults','.xls']);
         path = char(imgData.filePath);
     else
-        filter = fullfile(char(imgData.filePath),char([name,'_SparkDetResults','.xls']));      
+        filter = fullfile(char(imgData.filePath), ...
+            char([name,'_SparkDetResults','.xls']));      
         [file,path] = uiputfile(filter);
     end
 else
-    filter = fullfile(char(imgData.filePath),char([name,'_SparkDetResults','.xls']));      
+    filter = fullfile(char(imgData.filePath), ...
+        char([name,'_SparkDetResults','.xls']));      
     [file,path] = uiputfile(filter);
 end
 
@@ -40,7 +42,7 @@ set(mainFig,'Pointer','watch')
 drawnow
 
 % set up path for xls file
-path_xls = fullfile(path,file);
+path_xls = fullfile(path, file);
 
 
 %% get all data and prepare them to save in xls file 
@@ -384,20 +386,19 @@ else
 end
  
 % get path to save figures 
-[pathFigs,nameFigs,~] = fileparts(path_xls);
+[pathFigs, nameFigs,~] = fileparts(path_xls);
 
 % delete files if exist
-if exist(sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), 'file')
-    delete(sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs))
+if exist(sprintf('%s/%s.pdf',pathFigs, nameFigs), 'file')
+    delete(sprintf('%s/%s.pdf',pathFigs, nameFigs))
 end
 
-if exist(sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs), 'file')
-    delete(sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs))
+if exist(sprintf('%s/%s.ps',pathFigs,nameFigs), 'file')
+    delete(sprintf('%s/%s.ps',pathFigs,nameFigs))
 end
 
 % save figures as .ps and also .pdf
 if ~isempty(allHtoSave)
-    tic
     for i = 1:numel(allHtoSave)     
         % set upfigures for printing
         set(allHtoSave(i), 'Units','pixels');
@@ -406,24 +407,21 @@ if ~isempty(allHtoSave)
                           'PaperUnits','points',...
                           'PaperSize',[posFig(3), posFig(4)])   
         % create file 
-        if ~exist(sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), 'file')
+        if ~exist(sprintf('%s/%s.pdf',pathFigs,nameFigs), 'file')
             % print(allHtoSave(i), ...
-            %     sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs), '-dpsc')
+            %     sprintf('%s/%s.ps',pathFigs,nameFigs), '-dpsc')
             exportgraphics(allHtoSave(i), ...
-                sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), ...
+                sprintf('%s/%s.pdf',pathFigs,nameFigs), ...
                 'Resolution',str2double(hObjs.h_edit_res.String))
         else
             % print(allHtoSave(i), '-dpsc', '-append', ...
-            %     sprintf('%s/%sAllEvents.ps',pathFigs,nameFigs))
+            %     sprintf('%s/%s.ps',pathFigs,nameFigs))
             exportgraphics(allHtoSave(i), ...
-                sprintf('%s/%sAllEvents.pdf',pathFigs,nameFigs), ...
+                sprintf('%s/%s.pdf',pathFigs,nameFigs), ...
                 'Append',true, ...
                 'Resolution',str2double(hObjs.h_edit_res.String))
         end                                    
     end   
-toc
-
-
     close(allHtoSave)
 end
 

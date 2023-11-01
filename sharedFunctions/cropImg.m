@@ -19,7 +19,6 @@ imgDataXTfluoRN = imgData.imgDataXTfluoRN;
 imgDataXT = imgData.imgDataXT;
 
 switch str
-    
     case '<html> <p align="center"> set ROI to crop <html>'
         
         delete(findobj(ax_img,'Type','hggroup','Tag','imrect'))
@@ -132,8 +131,20 @@ switch str
             'YData',[1 size(imgDataXTfluoFN,1)])
         set(ax_img, 'XLim',[0 max(t)], ...
             'YLim',[1 size(imgDataXTfluoFN,1)])
-        % set profile 
-        set(ax_prof.Children, 'XData',t, 'YData',mean(imgDataXTfluoFN,1))
+        % set profile
+        % check if there is baseline mask or fit
+        if isfield(imgData, 'baselineM')
+            % delete previous baseline fit line
+            delete(findobj(hObjs.ax_prof, 'Type','Line', ...
+                'Tag','baselineFit'))
+            % delete previous baseline mask line
+            delete(findobj(hObjs.ax_prof, 'Type','Line', ...
+                '-regexp','Tag','Mask'))
+            % setup length of baseline mask
+            imgData.baselineM = imgData.baselineM(r_t);
+        end
+        set(ax_prof.Children, 'XData',t, 'YData',mean(imgDataXTfluoFN,1), ...
+            'Tag','wholeCellProfile')
         set(ax_prof, ...
             'YLim',getAxisLimits(mean(imgDataXTfluoFN,1), 5))
         % try to clear img sparks axes
@@ -178,7 +189,8 @@ switch str
             set(hObjs.h_edit_ROI,'String',num2str(h_ROI_prof))
         catch             
         end
-        
+        % show/calculate baseline mask
+        checkboxFcn(hObjs.check_doBsFit, [], mainFig) 
 end
 
 end

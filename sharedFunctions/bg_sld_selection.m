@@ -1,48 +1,65 @@
-function bg_sld_selection(h_O,~)
+function bg_sld_selection(h_O, ~)
 % control slider when selecting part of big image in time
 
 % handle of figure
 h_fig = h_O.Parent;
 
 % get data
-if strcmp(h_fig.Name,'spark detection')
-    % get data
-    hObjs = getappdata(h_fig,'hObjs');
-    imgData = getappdata(h_fig,'imgData');
-    imgSld = hObjs.h_img_sld;
-    % get width of slider window in ms
-    imgSld_w = str2double(hObjs.h_edit_imgSld_w.String)*1000;
-    if isfield(hObjs, 'ax_img_sparks')
-        h_ax = [hObjs.ax_img,hObjs.ax_img_sparks,hObjs.ax_prof];
-    else
-        h_ax = [hObjs.ax_img,hObjs.ax_prof];
-    end
-   
-    hlink1 = hObjs.hlink1;
-    hlink2 = hObjs.hlink2;
-    
-    h_sld_w_e = hObjs.h_edit_imgSld_w;
-    h_bg = hObjs.h_bg_sld;
-    h_b1 = hObjs.h_b1_sld;
-    h_b2 = hObjs.h_b2_sld;
-    
-else
-    hObjs = getappdata(h_fig,'hObjsFit');
-    imgData = getappdata(h_fig,'imgData');
-    imgSld = hObjs.h_img_sld_fit;
-    imgSld_w = str2double(hObjs.h_edit_imgSld_w_fit.String)*1000; % change from s to ms
-    h_ax = [hObjs.ax_fit, hObjs.ax_res];
-    
-    hlink1 = hObjs.hlink;
-    try
+switch h_fig.Name
+    case {'spark detection', 'spark recovery ryanodine'}
+        % get data
+        hObjs = getappdata(h_fig,'hObjs');
+        imgData = getappdata(h_fig,'imgData');
+        imgSld = hObjs.h_img_sld;
+        % get width of slider window in ms
+        imgSld_w = str2double(hObjs.h_edit_imgSld_w.String)*1000;
+        if isfield(hObjs, 'ax_img_sparks')
+            h_ax = [hObjs.ax_img,hObjs.ax_img_sparks,hObjs.ax_prof];
+        else
+            h_ax = [hObjs.ax_img,hObjs.ax_prof];
+        end
+
+        hlink1 = hObjs.hlink1;
         hlink2 = hObjs.hlink2;
-    catch
-    end
-    
-    h_sld_w_e = hObjs.h_edit_imgSld_w_fit;
-    h_bg = hObjs.h_bg_sld_fit;
-    h_b1 = hObjs.h_b1_sld_fit;
-    h_b2 = hObjs.h_b2_sld_fit;
+
+        h_sld_w_e = hObjs.h_edit_imgSld_w;
+        h_bg = hObjs.h_bg_sld;
+        h_b1 = hObjs.h_b1_sld;
+        h_b2 = hObjs.h_b2_sld;
+
+    case 'transients and waves analysis'
+        % get data
+        hObjs = getappdata(h_fig,'hObjs');
+        imgData = getappdata(h_fig,'imgData');
+        imgSld = hObjs.h_img_sld;
+        % get width of slider window in ms
+        imgSld_w = str2double(hObjs.h_edit_imgSld_w.String)*1000;
+        h_ax = [hObjs.ax_img,hObjs.ax_prof];
+        hlink1 = hObjs.hlink1;
+        hlink2 = hObjs.hlink2;
+
+        h_sld_w_e = hObjs.h_edit_imgSld_w;
+        h_bg = hObjs.h_bg_sld;
+        h_b1 = hObjs.h_b1_sld;
+        h_b2 = hObjs.h_b2_sld;
+
+    otherwise
+        hObjs = getappdata(h_fig,'hObjsFit');
+        imgData = getappdata(h_fig,'imgData');
+        imgSld = hObjs.h_img_sld_fit;
+        imgSld_w = str2double(hObjs.h_edit_imgSld_w_fit.String)*1000; % change from s to ms
+        h_ax = [hObjs.ax_fit, hObjs.ax_res];
+
+        hlink1 = hObjs.hlink;
+        try
+            hlink2 = hObjs.hlink2;
+        catch
+        end
+
+        h_sld_w_e = hObjs.h_edit_imgSld_w_fit;
+        h_bg = hObjs.h_bg_sld_fit;
+        h_b1 = hObjs.h_b1_sld_fit;
+        h_b2 = hObjs.h_b2_sld_fit;
 end
 
 if imgSld_w >= imgData.t(end)

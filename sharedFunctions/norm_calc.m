@@ -31,9 +31,6 @@ switch getappdata(mainFig,'analysisType')
 end
 % do pixelwise normalization
 % normalize data as: (F-F0)/(F0-blank) ,save F0
-% pre-allocation
-img_data_n = zeros(size(imgDataXTfluoFN));
-img_data_n_raw = zeros(size(imgDataXTfluoFN));
 % normalize with fitting or with just mean value division of baseline
 % region
 switch typeOfCalc
@@ -41,14 +38,42 @@ switch typeOfCalc
         if ~isempty(h_rect_F0)
             % get ROI mask
             roi_maskF0_F0 = createMask(h_rect_F0);
-            ROI_pos = h_rect_F0.Position;
-            delete(h_rect_F0)
+            % rows and columns of mask
             r_t = find(any(roi_maskF0_F0, 1));
             r_x = find(any(roi_maskF0_F0, 2));
+            ROI_pos = h_rect_F0.Position;
+            % delete rectangle to select F0 area
+            delete(h_rect_F0)
+            % crop data in x direction
+            imgData.imgDataXTfluoR = imgData.imgDataXTfluoR(r_x,:);
+            imgData.imgDataXTfluoF = imgData.imgDataXTfluoF(r_x,:);
+            imgData.imgDataXT = cellfun(@(x) x(r_x,:), ...
+                imgData.imgDataXT, 'UniformOutput',0);
+            try
+                imgData.imgDataXTtrans = imgData.imgDataXTtrans(r_x,:);
+            catch
+                imgData.imgDataXTtrans = [];
+            end
+            % save crop roi position
+            if isfield(imgData,'cropROIpos')
+                cropROIpos = imgData.cropROIpos;
+                imgData.cropROIpos = [cropROIpos(1)
+                    cropROIpos(2)+ROI_pos(2)
+                    cropROIpos(3)
+                    ROI_pos(4)];
+            else
+                imgData.cropROIpos = [t(1) ROI_pos(2) 
+                                      t(end)-t(1) ROI_pos(4)];
+            end
             % get crop of image to calculate baseline values
             crop_F0 = imgDataXTfluoFN(r_x,r_t);
             crop_F0_raw = imgDataXTfluoRN(r_x,r_t);
+            % to be sure it is same dimensions
+            imgDataXTfluoFN = imgDataXTfluoFN(r_x,:);
+            imgDataXTfluoRN = imgDataXTfluoRN(r_x,:);
             % pre-allocation
+            img_data_n = zeros(size(imgDataXTfluoFN));
+            img_data_n_raw = zeros(size(imgDataXTfluoFN));
             F0 = zeros(size(crop_F0,1),1);
             noise_est_px = zeros(size(crop_F0,1),1);
             F0raw = zeros(size(crop_F0,1),1);
@@ -80,6 +105,9 @@ switch typeOfCalc
             % set areas of detected sparks as NaNs
             mNaN = false(size(imgDataXTfluoFN));
             mNaN(cat(1,sparkDetection.detectedEvents.PixelIdxList)) = true;
+            % pre-allocation
+            img_data_n = zeros(size(imgDataXTfluoFN));
+            img_data_n_raw = zeros(size(imgDataXTfluoFN));
             F0 = zeros(size(imgDataXTfluoFN,1),1);
             F0raw = zeros(size(imgDataXTfluoFN,1),1);
             for i = 1:size(imgDataXTfluoFN,1)
@@ -112,7 +140,6 @@ switch typeOfCalc
                     hObjs.popUpMenuBaselineFcn.Value};
                 mBs = imgData.baselineM;
         end
-        
         % set up pointer to watch
         mainFig.Pointer = 'watch';
         % waitbar
@@ -120,6 +147,8 @@ switch typeOfCalc
             'CreateCancelBtn','setappdata(gcbf,''canceling'',1)');
         setappdata(hw,'canceling',0);
         % pre-allocation
+        img_data_n = zeros(size(imgDataXTfluoFN));
+        img_data_n_raw = zeros(size(imgDataXTfluoFN));
         F0 = zeros(size(imgDataXTfluoFN));
         F0raw = zeros(size(imgDataXTfluoFN));
         for i = 1:size(imgDataXTfluoFN,1)
@@ -178,23 +207,10 @@ set(ax_prof, 'Xlim',[t(1) t(end)], ...
     'YLim', getAxisLimits(mean(img_data_n, 1), 5),...
     'FontSize',14)
 set(get(ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
-set(get(ax_prof,'Ylabel'), 'String','fluorescence (deltaF/F0)', ...
+set(get(ax_prof,'Ylabel'), 'String','fluorescence (\DeltaF/F0)', ...
     'FontWeight','bold')
 
 % save data 
-% crop data in x direction if applicable
-if ~isempty(h_rect_F0)
-    imgData.imgDataXTfluoR = imgData.imgDataXTfluoR(r_x,:);
-    imgData.imgDataXTfluoF = imgData.imgDataXTfluoF(r_x,:);
-
-    imgData.imgDataXT = cellfun(@(x) x(r_x,:), ...
-        imgData.imgDataXT, 'UniformOutput',0);
-    try
-        imgData.imgDataXTtrans = imgData.imgDataXTtrans(r_x,:);
-    catch
-        imgData.imgDataXTtrans = [];
-    end
-end
 imgData.imgDataXTfluoFN = img_data_n;
 imgData.imgDataXTfluoRN = img_data_n_raw;
 imgData.F0 = F0;
@@ -203,18 +219,7 @@ imgData.z_max_img = z_max_img;
 imgData.z_min_img = z_min_img;
 imgData.norm_flag = 1;
 imgData.stdNoise = noise_est;
-% save crop roi position
-if ~isempty(h_rect_F0)
-    if isfield(imgData,'cropROIpos')
-        cropROIpos = imgData.cropROIpos;
-        imgData.cropROIpos = [cropROIpos(1)
-            cropROIpos(2)+ROI_pos(2)
-            cropROIpos(3)
-            ROI_pos(4)];
-    else
-        imgData.cropROIpos = [t(1) ROI_pos(2) t(end)-t(1) ROI_pos(4)];
-    end
-end
+
 % set up main window
 set(hObjs.h_pb_norm, 'String','normalized')
 set(hObjs.h_pb_norm, 'Enable','off')

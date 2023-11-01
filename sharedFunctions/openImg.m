@@ -282,17 +282,13 @@ set(get(hObjs.ax_img,'Ylabel'), 'String','x (px)', ...
 % time profile
 prof_t = mean(imgDataXTfluo, 1);
 % show time profile
-plot(t,prof_t, 'Parent',hObjs.ax_prof);
+plot(t,prof_t, 'Parent',hObjs.ax_prof, 'Tag','wholeCellProfile');
 set(hObjs.ax_prof, 'FontSize',14, 'Tag','profile')
 set(get(hObjs.ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
 set(get(hObjs.ax_prof,'Ylabel'), 'String','Fluorescence (F)', ...
     'FontWeight','bold')
 xlim(hObjs.ax_prof, [min(t) max(t)])
-try
-    ylim(hObjs.ax_prof, [min(prof_t) max(prof_t)])
-catch
-    ylim(hObjs.ax_prof, [min(prof_t) max(prof_t)+1])
-end
+ylim(hObjs.ax_prof, getAxisLimits(prof_t, 5))
 % link axes
 try
     linkaxes([hObjs.ax_img, hObjs.ax_img_sparks, hObjs.ax_prof], 'x')
@@ -335,7 +331,6 @@ imgData = struct('filePath',filePath,...
                  'userName',userName);
 % save image data in gui data
 setappdata(mainFig,'imgData',imgData)
-
 % set up main window
 set(hObjs.txt_name_img, ...
     'String',sprintf('%s',fullfile(filePath,char(fileName))),...
@@ -354,6 +349,25 @@ switch getappdata(mainFig,'analysisType')
         set(hObjs.txt_correctedSpF, ...
             'String',{'#';['sp*100',char(956),'m-1*s-1']})
         set(hObjs.h_push_sparks, 'Enable','on')
+    
+    case 'transients & waves'
+        % set normalization panel
+        set(hObjs.h_pb_norm,'Enable','on')
+        set(hObjs.h_pb_norm,'String','normalize data')
+        set(hObjs.h_pb_norm,'Callback',{@norm_data,mainFig})
+        set(hObjs.h_pb_norm,'FontWeight','normal')
+        set(hObjs.check_doBsFit,'Enable','on')
+        % check if baseline fitting is on
+        checkboxFcn(hObjs.check_doBsFit, [], mainFig)
+        % setup function to select baseline
+        set(hObjs.ax_prof, 'buttondownfcn',@mouseSetMaskFcn)
+        set(hObjs.h_push_eventImgROI, ...
+            'String','<html> <p align="center"> ROI to select image <br> of event <html>')
+        set(hObjs.h_push_eventImgROI, 'FontWeight','normal', ...
+            'Callback',{@selectEventImage,mainFig})
+        % restart table of selected events
+        set(hObjs.h_table_eventsImgs,'Data',repmat({'----'},[5,1]))
+
     otherwise
         set(hObjs.h_table_profs,'Data',zeros(5,2))
         % set normalization panel
@@ -368,7 +382,6 @@ switch getappdata(mainFig,'analysisType')
         if mod(n_px,2)==0
             n_px = n_px+1;
         end
-        
         set(hObjs.h_edit_ROI,'String',num2str(n_px)) 
         % set up panel for spark detection
         % set(hObjs.check_visRect,'Value',1)
@@ -398,10 +411,13 @@ if strcmp(get(hObjs.h_pb_crop,'String'),'crop')
     set(hObjs.h_pb_crop,'String','set ROI for cropping', ...
         'FontWeight','normal')
 end
-% set FWHM for spark detection, in pixels, 2 um
-set(hObjs.h_edit_fFWHM,'String','10')
-% set(hObjs.h_edit_fFWHM,'String',num2str(ceil(2/pxSzX)))
 
+% set FWHM for spark detection, in pixels, 2 um
+try
+    set(hObjs.h_edit_fFWHM,'String','10')
+    % set(hObjs.h_edit_fFWHM,'String',num2str(ceil(2/pxSzX)))
+catch
+end
 % remove old analysis
 if isfield(getappdata(mainFig),'lastPressedPusbutton')
     rmappdata(mainFig,'lastPressedPusbutton');   
@@ -413,6 +429,10 @@ end
 
 if isfield(getappdata(mainFig),'sparkDetection')
     rmappdata(mainFig,'sparkDetection');   
+end
+
+if isfield(getappdata(mainFig),'selectedROIs')
+    rmappdata(mainFig,'selectedROIs')
 end
 
 % restore image slider

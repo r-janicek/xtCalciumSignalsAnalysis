@@ -18,9 +18,10 @@ set(ax_sc, 'Visible', 'off','Position',[0.975 0.7075 0.005 0.125]);
 %# Switch off autoscaling.
 set(ax_sc, 'Xlim', [0, 1], 'YLim', [0, 1]);
 line([0.5 0.5],[0,1],'Parent',ax_sc,'LineWidth',4,'Color','k')
-h_txt_scale = text('Parent',ax_sc,'Position',[1 0.5],'String',[sprintf('%0.2f',0),' \mum'],...
-    'FontSize',16,'FontWeight','bold','Rotation',90,...
-    'HorizontalAlignment','center','VerticalAlignment','cap');
+h_txt_scale_img = text('Parent',ax_sc, 'Position',[1 0.5], ...
+    'String',[sprintf('%0.2f',0),' \mum'],...
+    'FontSize',16, 'FontWeight','bold', 'Rotation',90,...
+    'HorizontalAlignment','center', 'VerticalAlignment','cap');
 
 ax_prof = axes('Parent',mainFig,'units','normalized','PickableParts','all');
 set(ax_prof,'Position',[0.03 0.36 0.94 0.2],'YGrid','on','FontSize',14)
@@ -40,7 +41,7 @@ hlink2 = [];
 hObjs.mainFig = mainFig;
 hObjs.ax_img = ax_img;
 hObjs.ax_sc = ax_sc;
-hObjs.h_txt_scale = h_txt_scale;
+hObjs.h_txt_scale_img = h_txt_scale_img;
 hObjs.ax_prof = ax_prof;
 hObjs.hlink1 = hlink1;
 hObjs.hlink2 = hlink2;

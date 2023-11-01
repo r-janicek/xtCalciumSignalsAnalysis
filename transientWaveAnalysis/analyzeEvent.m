@@ -270,12 +270,15 @@ switch selectedEvent.type
     
     % show deskewed profile
     line(t,deskewedWaveProf,...
-        'Parent',hObjsA.ax_deskewedProf,'Color',[0 0 0 0.75],'LineStyle','-','LineWidth',1,...
+        'Parent',hObjsA.ax_deskewedProf, ...
+        'Color',[0 0 0 0.75], 'LineStyle','-', 'LineWidth',1,...
         'Tag','profile');
     
     % save data
-    waveAnalysis = struct('waveImg',waveImg,'waveImgDeskewed',waveImgDeskewed,...
-                          'tauD_regionWise',{tauD_regionWise},'waveSpeed',waveSpeed,...
+    waveAnalysis = struct('waveImg',waveImg, ...
+                          'waveImgDeskewed',waveImgDeskewed,...
+                          'tauD_regionWise',{tauD_regionWise}, ...
+                          'waveSpeed',waveSpeed,...
                           'fitOfWaveFront',{fitWaveFront},...
                           'deskewedWaveProf',deskewedWaveProf);
     
@@ -469,12 +472,11 @@ case 'caffeine'
    
 case 'transient'
     %% %%%%%%%%%%%%%%%%%%%% TRANSIENTS ANALYSIS %%%%%%%%%%%%%%%%%%%%%%%%%%% 
-    
     % set up zoom
     hObjsA.ax_orgImgProf.ButtonDownFcn = @showBiggerAxes;
     
     % save data
-    transientsProf = mean(img,1);
+    transientsProf = mean(img, 1);
     transientAnalysis = struct('transientsImg',img,...
         'transientsProf',transientsProf);
     
@@ -487,7 +489,7 @@ case 'transient'
     
     % fit t-profile of image with spline and with exponential rise
     % to get t0
-    findAndAnalyzePeaks([],[],analysisFig)
+    findAndAnalyzePeaks([], [], analysisFig)
     
     
 end
