@@ -140,8 +140,13 @@ for i = 1:height(selectedROIs)
 end
 
 % save position of crop ROI
-posOfCropROI = [{'position of cropROI'};{'x(ms); y(px); w(ms); h(px)'};...
-    num2cell(imgData.cropROIpos(:))];
+if isfield(imgData,'cropROIpos')
+    posOfCropROI = [{'position of cropROI'};{'x(ms); y(px); w(ms); h(px)'};...
+        num2cell(imgData.cropROIpos(:))];
+else
+    posOfCropROI = [{'position of cropROI'};{'x(ms); y(px); w(ms); h(px)'};...
+        num2cell(nan(4,1))];
+end
 
 % data animal and notes
 animal = hObjs.popUpMenuAnimal.String(hObjs.popUpMenuAnimal.Value);
@@ -315,8 +320,8 @@ if isfield(getappdata(mainFig),'electroPhys')
     image(whImg, 'CDataMapping','scaled', 'Parent',whImg_ax, ...
         'XData',[0 size(whImg,2)*pxSzT]);
     if isempty(cropROIpos)
-        cropROIpos = [whImg_ax.XLim(1) whImg_ax.YLim(1) 
-                      whImg_ax.XLim(2) whImg_ax.YLim(2)];
+        cropROIpos = [whImg_ax.XLim(1), whImg_ax.YLim(1), ... 
+                      whImg_ax.XLim(2), whImg_ax.YLim(2)];
     end
     rectangle('Position',cropROIpos, 'Parent',whImg_ax,...
         'EdgeColor','w', 'LineWidth',3)
@@ -334,8 +339,8 @@ else
     image(whImg, 'CDataMapping','scaled', 'Parent',whImg_ax, ...
         'XData',[0 size(whImg,2)*pxSzT]);
     if isempty(cropROIpos)
-        cropROIpos = [whImg_ax.XLim(1) whImg_ax.YLim(1) 
-                      whImg_ax.XLim(2) whImg_ax.YLim(2)];
+        cropROIpos = [whImg_ax.XLim(1), whImg_ax.YLim(1), ... 
+                      whImg_ax.XLim(2), whImg_ax.YLim(2)];
     end
     rectangle('Position',cropROIpos, 'Parent',whImg_ax,...
         'EdgeColor','w', 'LineWidth',5)
@@ -347,7 +352,8 @@ else
     delayImgToCurr = 0;
     xt_cur = 0;
 end
-
+% make sure it is showing whole image
+hObjs.ax_img.XLim = [imgData.t(1) imgData.t(end)];
 % copy filtered and normalized cropped image
 ax_CroppedImg = copyobj(hObjs.ax_img,whImg_fig_final);
 ax_CroppedImg.Position = [0.04 0.305 0.94 0.22];
@@ -545,17 +551,20 @@ if ~isempty(allHtoSave)
         % create file 
         if ~exist(sprintf('%s/%s.pdf',pathFigs,nameFigs), 'file')  
             % print(allHtoSave(i), ...
-            %     sprintf('%s/%sAllEvents',pathFigs,nameFigs), '-dpsc')
-            exportgraphics(allHtoSave(i), ...
-                sprintf('%s/%s.pdf',pathFigs,nameFigs))
-        else
-            % print(allHtoSave(i), '-dpsc', '-append', ...
-            %     sprintf('%s/%sAllEvents',pathFigs,nameFigs))
+            %      sprintf('%s/%s.ps',pathFigs,nameFigs), '-dpsc')
             exportgraphics(allHtoSave(i), ...
                 sprintf('%s/%s.pdf',pathFigs,nameFigs), ...
+                'Resolution',str2double(hObjs.h_edit_res.String))
+        else
+             % print(allHtoSave(i), '-dpsc', '-append', ...
+             %     sprintf('%s/%s.ps',pathFigs,nameFigs))
+            exportgraphics(allHtoSave(i), ...
+                sprintf('%s/%s.pdf',pathFigs,nameFigs), ...
+                'Resolution',str2double(hObjs.h_edit_res.String), ...
                 'Append',true)
         end                                                                       
-    end           
+    end   
+
     close(allHtoSave)
 end
 

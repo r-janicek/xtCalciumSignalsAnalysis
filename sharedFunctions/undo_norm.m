@@ -20,12 +20,14 @@ if imgData.norm_flag==1
     % delete patches texts
     delete(findobj(ax_img,'Type','Text'))
     
-    set(whole_img_h,'CData',imgData.imgDataXTfluoFN)   
-    set(get(ax_img,'Ylabel'),'String','x (pixels) [filtered]')   
-    clim(ax_img,[imgData.z_min_img imgData.z_max_img])
-    
+    set(whole_img_h, 'CData',imgData.imgDataXTfluoFN)   
+    set(get(ax_img, 'Ylabel'),'String','x (pixels) [filtered]')   
+    clim(ax_img, [imgData.z_min_img imgData.z_max_img])
+    hObjs.ax_img.Toolbar.Visible = 'off';
+
     if isfield(hObjs, 'ax_img_sparks')
         cla(hObjs.ax_img_sparks)
+        hObjs.ax_img_sparks.Toolbar.Visible = 'off';
     end
     cla(hObjs.ax_prof)
     
@@ -56,6 +58,7 @@ if imgData.norm_flag==1
             if isfield(sparkDetection,'detectedEventsRec')
                 delete(findall(hObjs.ax_img,'Tag','detectedEventRecText'))
                 delete(sparkDetection.detectedEventsRec)
+                delete(findall(hObjs.ax_img, 'Type', 'rectangle'))
             end
         catch
         end
@@ -70,6 +73,21 @@ if imgData.norm_flag==1
     % save data
     imgData.norm_flag = 0;   
     setappdata(mainFig,'imgData',imgData)
+
+    % show not normalized profile of image
+    plot(imgData.t, mean(imgData.imgDataXTfluoFN,1), ...
+        'Parent',hObjs.ax_prof, 'Tag','wholeCellProfile')
+    set(hObjs.ax_prof, 'FontSize',14, ...
+        'Xlim',[imgData.t(1) imgData.t(end)],...
+        'YLim', getAxisLimits(mean(imgData.imgDataXTfluoFN,1), 5))
+    set(get(hObjs.ax_prof,'Xlabel'), 'String','t (ms)', ...
+        'FontWeight','bold')
+    set(get(hObjs.ax_prof,'Ylabel'), 'String','Fluorescence (F)', ...
+        'FontWeight','bold')
+    hObjs.ax_prof.Toolbar.Visible = 'off';
+    % disable built-in axes interactions
+    arrayfun(@(x) disableDefaultInteractivity(x), ...
+        findall(mainFig, 'Type', 'Axes'))
     
     % set up main windows
     switch getappdata(mainFig,'analysisType')
@@ -84,14 +102,11 @@ if imgData.norm_flag==1
             set(hObjs.h_pb_norm,'String','normalize data')
             set(hObjs.h_pb_norm,'Callback',{@norm_data,mainFig})
             set(hObjs.h_pb_norm,'FontWeight','normal')
-
             set(hObjs.h_pb_GetBlank,'Enable','on')
             set(hObjs.h_push_BlankROI,'Enable','on')
             set(hObjs.h_edit_Blank,'Enable','on')
             %set(hObjs.h_edit_Blank,'String','nan')
-
             set(hObjs.h_pb_crop,'Enable','on')
-
             
         case 'transients & waves'
             % reset buttons for ROIs and table
@@ -123,19 +138,8 @@ if imgData.norm_flag==1
             if isfield(getappdata(mainFig),'selectedROIs')
                 rmappdata(mainFig,'selectedROIs')
             end
-
     end
-    % show not normalized profile of image
-    plot(imgData.t, mean(imgData.imgDataXTfluoFN,1), ...
-        'Parent',hObjs.ax_prof, 'Tag','wholeCellProfile')
-    set(hObjs.ax_prof, 'FontSize',14, ...
-        'Xlim',[imgData.t(1) imgData.t(end)],...
-        'YLim', getAxisLimits(mean(imgData.imgDataXTfluoFN,1), 5))
-    set(get(hObjs.ax_prof,'Xlabel'), 'String','t (ms)', ...
-        'FontWeight','bold')
-    set(get(hObjs.ax_prof,'Ylabel'), 'String','Fluorescence (F)', ...
-        'FontWeight','bold')
-
+    
 else
     return
     

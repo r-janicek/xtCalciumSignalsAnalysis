@@ -23,6 +23,7 @@ if ~isempty(sparkDetection)
         delete(findall(hObjs.ax_img,'Tag','detectedEventRecText'))
         delete(sparkDetection.detectedEventsRec)
         delete(sparkDetection.detectedEventsMask)
+        delete(findall(hObjs.ax_img, 'Type', 'rectangle'))
         rmappdata(mainFig,'sparkDetection')
     end
 end
@@ -31,6 +32,19 @@ switch detectionFlag
     case 'new'
         % last pressed pushbutton to detect events
         setappdata(mainFig,'lastPressedPusbutton',h_O);
+        if isfield(getappdata(mainFig), 'sparkDetection')
+            sparkDetection = getappdata(mainFig,'sparkDetection');
+            try
+                if isfield(sparkDetection,'detectedEventsRec')
+                    delete(findall(hObjs.ax_img,'Tag','detectedEventRecText'))
+                    delete(sparkDetection.detectedEventsRec)
+                    delete(findall(hObjs.ax_img, 'Type', 'rectangle'))
+                end
+            catch
+            end
+            rmappdata(mainFig,'sparkDetection')
+        end
+
         % find events
         events = findEvents(mainFig, imgDataXTfluoR);
     case 'update'

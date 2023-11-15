@@ -111,19 +111,26 @@ switch str
         imgDataXTfluoRN = imgDataXTfluoRN(r_x,r_t);
         imgDataXTfluoF = imgDataXTfluoF(r_x,r_t);
         imgDataXTfluoFN = imgDataXTfluoFN(r_x,r_t);
-        try
-            imgDataXTtrans = imgDataXTtrans(r_x,r_t);
-        catch
-            imgDataXTtrans = [];  
-        end  
-        imgDataXT = cellfun(@(x) x(r_x,r_t), imgDataXT, ...
-            'UniformOutput',0);
-        
         % recalculate new t axis
         t = imgData.t;
         t = t(r_t);
         crop_s_t = t(1); 
         t = t - t(1);
+        % crop trans data
+        try
+            imgDataXTtrans = imgDataXTtrans(r_x,r_t);
+            set(findobj(hObjs.h_ax_transCh, 'Type','Image'), ...
+                'CData',imgDataXTtrans, ...
+                'XData',[0 max(t)], ...
+                'YData',[1 size(imgDataXTtrans,1)])
+            set(hObjs.h_ax_transCh, 'XLim',[0 max(t)], ...
+                'YLim',[1 size(imgDataXTtrans,1)])
+        catch
+            imgDataXTtrans = [];  
+        end
+        imgDataXT = cellfun(@(x) x(r_x,r_t), imgDataXT, ...
+            'UniformOutput',0);
+        
         % set image axes limits
         set(findobj(ax_img, 'Type','Image'), ...
             'CData',imgDataXTfluoFN, ...
@@ -189,8 +196,11 @@ switch str
             set(hObjs.h_edit_ROI,'String',num2str(h_ROI_prof))
         catch             
         end
+
         % show/calculate baseline mask
-        checkboxFcn(hObjs.check_doBsFit, [], mainFig) 
+        if strcmp(mainFig.Name, 'transients and waves analysis')
+            checkboxFcn(hObjs.check_doBsFit, [], mainFig)
+        end
 end
 
 end

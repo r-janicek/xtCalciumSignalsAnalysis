@@ -91,28 +91,27 @@ if ~isempty(t_prof)
         eE = max(eE, p_50_afterPeak);
 
         if sE>1
-            y_t1 = [ zeros(sE-1,1); t_prof(sE:pos_t-1) ];
+            y_t1 = [ -inf(sE-1,1); t_prof(sE:pos_t-1) ];
         else
             y_t1 = t_prof(1:pos_t-1);
         end
-        y_t2 = [ zeros(pos_t-1,1); t_prof(pos_t:eE) ];
+        y_t2 = [ -inf(pos_t-1,1); t_prof(pos_t:eE) ];
 
         % find position of first half max position
         y_t1_r = flipud(y_t1);
         d_y_t1 = gradient(y_t1_r);
-
         if all(d_y_t1==0)
             pos_25 = numel(d_y_t1);
             pos_75 = numel(d_y_t1);
             pos_50_1 = numel(d_y_t1);
         else
             indDer1_25 = find( d_y_t1<=0 & y_t1_r<max_t_25perc, 1, 'first');
-            indDer1_50 = find( d_y_t1<=0 & y_t1_r<half_max_t, 1, 'first');
-
+            indDer1_50 = find( d_y_t1<=0 & y_t1_r<half_max_t, 1, 'first')+1;
+            if indDer1_50 > numel(y_t1_r), indDer1_50 = numel(y_t1_r); end
             y_t1_r_25 = y_t1_r;
             y_t1_r_50 = y_t1_r;
-            if ~isempty(indDer1_25), y_t1_r_25(indDer1_25:end) = 0; end
-            if ~isempty(indDer1_50), y_t1_r_50(indDer1_50:end) = 0; end
+            if ~isempty(indDer1_25), y_t1_r_25(indDer1_25:end) = -inf; end
+            if ~isempty(indDer1_50), y_t1_r_50(indDer1_50:end) = -inf; end
 
             y_t1_25 = flipud(y_t1_r_25);
             y_t1_50 = flipud(y_t1_r_50);
@@ -126,11 +125,10 @@ if ~isempty(t_prof)
         % find position of second half max position
         d_y_t2 = gradient(y_t2);
 
-        indDer2 = find( d_y_t2<0 & y_t2<(max_t_25perc) & t_indx(1:eE)>pos_t, ...
-            1, 'first');
-        if ~isempty(indDer2)
-            y_t2(indDer2:end) = 0;
-        end
+        indDer2 = find( d_y_t2<0 & y_t2<half_max_t & t_indx(1:eE)>pos_t, ...
+            1, 'first')+1;
+        if indDer2 > numel(y_t2), indDer2 = numel(y_t2); end
+        if ~isempty(indDer2), y_t2(indDer2:end) = -inf; end
 
         [~,pos_50_2] = min(abs(y_t2 - half_max_t));
 
@@ -227,7 +225,7 @@ if ~isempty(x_prof)
         max_x_25perc = (val_x(1)-bs_x)*0.25 + bs_x;
 
         y_x1 = x_prof(1:pos_x-1);
-        y_x2 = cat(1 ,zeros(pos_x-1,1), x_prof(pos_x:(length(x_prof))));
+        y_x2 = cat(1 ,-inf(pos_x-1,1), x_prof(pos_x:(length(x_prof))));
 
         % find position of first half max
         y_x1_r = flipud(y_x1);

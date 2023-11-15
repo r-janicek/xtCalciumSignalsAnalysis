@@ -25,11 +25,15 @@ h_rect = drawrectangle(ax_img, ...
     'Position',[ax_img.XLim(1) ax_img_yLim(1) wRoi ax_img_yLim(2)]);
 switch eventType
     case 'wave'
-        h_rect.Color = 'r';       
-    case 'transient'
-        h_rect.Color = 'k';        
+        h_rect.Color = 'r';            
     case 'caffeine'
         h_rect.Color = 'g';
+    otherwise
+        if contains(eventType, 'spon')
+            h_rect.Color = 'y';
+        else
+            h_rect.Color = 'k';
+        end
 end
     
 % change pushbutton

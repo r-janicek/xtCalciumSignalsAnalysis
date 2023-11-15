@@ -275,7 +275,7 @@ t = linspace(0, (size(imgDataXTfluo,2)-1)*pxSzT, size(imgDataXTfluo,2));
 image(imgDataXTfluo, ...
     'YData',[1 size(imgDataXTfluo,1)], ...
     'XData',[0 max(t)],...
-    'CDataMapping','scaled','Parent',hObjs.ax_img);
+    'CDataMapping','scaled', 'Parent',hObjs.ax_img);
 set(hObjs.ax_img, 'XTick',[], 'FontSize',14, 'Tag','img')
 set(get(hObjs.ax_img,'Ylabel'), 'String','x (px)', ...
     'FontWeight','bold')
@@ -341,6 +341,7 @@ image(imgDataXTtrans, 'CDataMapping','scaled', ...
     'ButtonDownFcn',{@axesTransChFunction});
 set(hObjs.h_ax_transCh, 'XTick',[], 'YTick',[], 'PickableParts','all')
 set(hObjs.h_ax_transCh, 'ButtonDownFcn',{@axesTransChFunction})
+hObjs.h_ax_transCh.Toolbar.Visible = 'off';
 
 switch getappdata(mainFig,'analysisType')
     case 'spark detection'
@@ -447,6 +448,9 @@ val_u = imgData.t(end);
 arrayfun(@(x) set(x,'XLim',[val_l val_u]), h_ax)
 hObjs.h_bg_sld.SelectedObject = hObjs.h_b1_sld;
 
+% do not show toolbar for axes
+arrayfun(@(x) set(x.Toolbar,'Visible','off'), h_ax)
+
 % remove listeners
 delete(getappdata(mainFig,'propListener'))
 delete(getappdata(mainFig,'editScaleListener_img'))
@@ -456,6 +460,10 @@ delete(getappdata(mainFig,'editScaleListener_sparks'))
 set(mainFig,'WindowKeyPressFcn',[]);
 set(mainFig,'WindowButtonUpFcn',[]);
 set(mainFig,'WindowButtonMotionFcn',[]);
+
+% disable built-in axes interactions
+arrayfun(@(x) disableDefaultInteractivity(x), ...
+    findall(mainFig, 'Type', 'Axes'))
 
 % add listener for interactive scale for image axes
 % set and add interactive scale

@@ -30,12 +30,16 @@ if ~isempty(pks)
         % get position of peak of events in pixels
         [~,locs_px] = min(abs(x_t-locs(i)));
         if isempty(sSpPrev) && isempty(eSpPrev)
+            % mask of fitted event
+            m_event = false(size(prof_t));
+            m_event(find(~prof_t_evnts_m(1:locs_px),1,'last'): ...
+                locs_px+find(~prof_t_evnts_m(locs_px:end),1,'first')-1) = true;
             % take event peak position and its surrounding
-            % (maxDurOfBaseline, 3*maxDurOfBaseline)
+            % (maxDurOfBaseline, 2*maxDurOfBaseline)
             m_eventWithBsl = false(size(prof_t));
             m_eventWithBsl( ...
                 max(1, locs_px - maxDurOfBaseline) : ...
-                min(numel(prof_t), locs_px + 3*maxDurOfBaseline)) = true;
+                min(numel(prof_t), locs_px + 2*maxDurOfBaseline)) = true;
             % smooth profile for further analysis,
             % loess with defined duration in ms
             %prof_s = smooth(prof_t,3);
@@ -44,9 +48,10 @@ if ~isempty(pks)
             prof_s = nan(size(prof_t));
             prof_s(m_eventWithBsl) = smooth(prof_t(m_eventWithBsl), ...
                 n_pts/numel(prof_t(m_eventWithBsl)), 'loess');
-
             bs_crit = round(bs_crit);
-            percentl = prctile(prof_s, [25 50 bs_crit]);
+            % calculate from event
+            percentl = prctile(prof_s(m_eventWithBsl & prof_s>0), ...
+                [25 50 bs_crit]);
             if max(percentl) > max(prof_s(prof_t_evnts_m))
                 percentl = prctile(prof_s(prof_t_evnts_m), ...
                     [25 50 bs_crit]);
@@ -57,30 +62,38 @@ if ~isempty(pks)
             % treshold profile
             prof_s(prof_s < bsl) = bsl;
             % get all posible peaks in profile of events
-            [v_s, l_s] = findpeaks(prof_s);
+            [v_s, l_s] = findpeaks(prof_s(m_event));
+            l_s = l_s + find(m_event, 1, 'first') - 1;
             % get the one closest to peak of event
             [~, idx_p] = min(abs(l_s-locs_px));
+            % change values of currently fitted event to peak value 
+            % (to be sure I have correct estimate of baseline. 
+            % It might happen that detected spark has multiple peaks, 
+            % this will remove them and still keep nice trace to calculate gradient)
+            if numel(l_s) > 1
+                prof_s(m_event) = v_s(idx_p);
+            end
             % calculate start and end of event using derivation
             % calculated on thresholded event profile
             % find start of event
             prof_s_beforePeak = prof_s(1:l_s(idx_p));
             % flip profile to calulate gradient from left to right
             prof_s_beforePeak = flipud(prof_s_beforePeak(:));
-            pos_s = max( ...
+            pos_s = max( [...
                 l_s(idx_p)-find(gradient(prof_s_beforePeak)>0, 1, 'first')+1, ...
-                l_s(idx_p)-maxDurOfBaseline ...
-                );
-            if isempty(pos_s) || isnan(pos_s)
+                l_s(idx_p)-maxDurOfBaseline ] );
+            if isempty(pos_s) || isnan(pos_s) || pos_s < 1
                 pos_s = find(m_eventWithBsl, 1, 'first');
+                if isempty(pos_s)
+                    pos_s = 1;
+                end
             end
             % find end of event
             prof_s_afterPeak = prof_s(l_s(idx_p):end);
-           
-            pos_e = min( ...
-                l_s(idx_p)+find(gradient(prof_s_afterPeak)>=0, 1, 'first')-1, ...
-                l_s(idx_p)+3*maxDurOfBaseline ...
-                );
-            if isempty(pos_e) || isnan(pos_e)
+            pos_e = min( [...
+                l_s(idx_p)+find(gradient(prof_s_afterPeak)>0, 1, 'first')-1, ...
+                l_s(idx_p)+2*maxDurOfBaseline] );
+            if isempty(pos_e) || isnan(pos_e) || pos_e>numel(prof_t)
                 pos_e = find(m_eventWithBsl, 1, 'last');
             end
             if pos_e<=pos_s, pos_e = pos_s+1; end
@@ -112,6 +125,7 @@ if ~isempty(pks)
             
             t0FirstEst = locs(i)-10;
             [~,t0FirstEstPx] = min( abs( t-t0FirstEst ) );
+            t0FirstEstPx = l_s(idx_p) - find(~prof_t_evnts_m(1:l_s(idx_p)),1,'last');
             if t0FirstEstPx <= 0
                 t0FirstEstPx = 3; % first five points
             end
@@ -133,6 +147,7 @@ if ~isempty(pks)
                 % construct line two-point form and get x at y=y0
                 t0_ind_est = round( p_25 + ( (y0-v_25)*(p_75-p_25) ) / (v_75-v_25) );
                 tR_est = t(p_75)-t(p_25);
+                if tR_est<mean(diff(t)), tR_est = 3; end
                 if t0_ind_est<1, t0_ind_est = 1; end
                 % t0,tR,A,y0
                 x0 = [t(t0_ind_est) tR_est A-y0 y0];

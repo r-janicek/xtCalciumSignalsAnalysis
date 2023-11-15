@@ -27,7 +27,7 @@ else
                     ax_img_yLim(2)]);
     % setup pushbutton
     set(hObjs.h_pb_norm, 'String','normalize')
-    set(hObjs.h_pb_norm, 'Callback',{@norm_calc,mainFig,h_rect_F0})
+    set(hObjs.h_pb_norm, 'Callback',{@norm_calc, mainFig, h_rect_F0})
     set(hObjs.h_pb_norm, 'FontWeight','bold')
 end
 

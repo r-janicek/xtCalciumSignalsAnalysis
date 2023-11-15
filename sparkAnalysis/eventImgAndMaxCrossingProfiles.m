@@ -14,7 +14,6 @@ rows_e = statEvent.SubarrayIdx{1};
 cols_e = statEvent.SubarrayIdx{2};
 % image of event
 imgE = img(rows_e,cols_e);
-
 % mask of image
 imgMask = false(size(img));
 % mask of event in rectangle image of event
@@ -96,7 +95,7 @@ if isempty(startOfEvent)
         img(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
     t_spark_prof_whImg = t_spark_prof_whImg(:);
     
-    %fit only rise of spark fun(t0,u,tR,A,y0)
+    %fit only rise of spark fun(t0,tR,A,y0)
     locs = t_whImg(cols_e(1)-1+c_m);
     pks = t_spark_prof_whImg(cols_e(1)-1+c_m);
     t_whImg_evnt_m = false(size(t_whImg));
@@ -127,8 +126,9 @@ end
 
 % mask of t profile of event, take in to account also fit with exp. rise
 % function
-t_event_prof_m = false(size(cols_e));
-t_event_prof_m(startOfEvent-cols_e(1)+1:endOfEvent-cols_e(1)+1) = true;
+t_event_prof_m = t_whImg_evnt_m(cols_e);%false(size(cols_e));
+% t_event_prof_m(startOfEvent-cols_e(1)+1:endOfEvent-cols_e(1)+1) = true;
+
 % adjusted event area data
 imgE = img(rows_e,cols_e);
 imgEm = imgMask(rows_e,cols_e);

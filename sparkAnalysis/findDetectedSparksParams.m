@@ -529,6 +529,11 @@ if ~isempty(statSparks)
                         get(gca,'YLim'), 'Parent',ha1, ...
                         'LineWidth',1, 'Color','k', 'LineStyle','-');
                     set(ha1, 'FontSize',fontSzNum)
+                    old_img_cLims = get(ha1,'Clim');
+                    % in case taht in image of events there is also a part
+                    % of another event with much higher amplitude
+                    set(ha1, 'Clim', [old_img_cLims(1) ...
+                        prctile(imgE(imgE_m),99,'all')])
                     title(ha1, fig_title_txt, 'FontSize',fontSzT)
                     xlabel(ha1,'t (ms)', 'FontSize',fontSzL)
                     ylabel(ha1,'x (\mum)', 'FontSize',fontSzL)

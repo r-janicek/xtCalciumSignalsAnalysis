@@ -26,7 +26,25 @@ switch hO.Tag
         end
         
     case 'pxSzT'
+        old_pxSzT = imgData.pxSzT;
         imgData.pxSzT = pxSz;
+        % re-create time vector, starting at 0 (ms)
+        imgData.t = linspace(0, ...
+                             (size(imgData.imgDataXTfluoFN,2)-1)*pxSz, ...
+                             size(imgData.imgDataXTfluoFN,2));
+        % set up axes
+        h_img = findobj(hObjs.ax_img, 'Type','image');
+        h_img.XData = [min(imgData.t) max(imgData.t)];
+        hObjs.ax_img.XLim = [min(imgData.t) max(imgData.t)];
+        h_prof = findobj(hObjs.ax_prof, ...
+            {'Type','line'},'-and', ...
+            {'-not',{{'-regexp','Tag','Mask'},'-or',{'-regexp','Tag','baseline'}}}); 
+        h_prof.XData = imgData.t;
+        % set up
+        if isfield(imgData, 'crop_s_t')
+            imgData.crop_s_t = imgData.crop_s_t*(pxSz/old_pxSzT);
+        end
+
 end
 % save changed image data
 setappdata(mainFig, 'imgData', imgData)

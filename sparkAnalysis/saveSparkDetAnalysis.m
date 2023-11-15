@@ -329,10 +329,6 @@ if ~isempty(imgData.imgDataXY)
         line([scanLinePos(1) scanLinePos(2)],[scanLinePos(3) scanLinePos(4)],'Parent',ch2_h,'LineWidth',2,'Color','y',...
             'LineStyle','-');        
     end
-    if ~isempty(TPPpointPos)
-        pos = [TPPpointPos(1)-(d_TP_laser/pxSzX)/2 TPPpointPos(2)-(d_TP_laser/pxSzX)/2 (d_TP_laser/pxSzX) (d_TP_laser/pxSzX)];
-        rectangle('Position',pos,'Curvature',[1 1],'Parent',ch2_h,'EdgeColor','r','LineWidth',2)     
-    end
     % scale 10 um
     line([ch1_h.XLim(2)-5-10/pxSzX ch1_h.XLim(2)-5],[ch1_h.YLim(2)-5 ch1_h.YLim(2)-5],'Parent',ch2_h,'LineWidth',2,'Color','g',...
             'LineStyle','-'); 
@@ -396,6 +392,9 @@ end
 if exist(sprintf('%s/%s.ps',pathFigs,nameFigs), 'file')
     delete(sprintf('%s/%s.ps',pathFigs,nameFigs))
 end
+
+% path to ghostscript
+% add in future to make smaller size pdfs
 
 % save figures as .ps and also .pdf
 if ~isempty(allHtoSave)

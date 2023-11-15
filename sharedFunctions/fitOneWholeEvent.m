@@ -22,7 +22,11 @@ sE = find(mProf,1,'first');
 eE = find(mProf,1,'last');
 
 x_E = x(sE:eE);
-y_E = y(sE:eE);
+% y_E = y(sE:eE);
+% x_E = x(sE:eE);
+y_E = y;
+y_E(~mProf) = -inf;
+
 % max of event profile
 [maxV, maxP] = max(y_E);
 
@@ -37,7 +41,6 @@ opt = optimoptions('fmincon','TolFun',1e-9,'TolX',1e-9,'TolCon',1e-9,...
 switch piecewise
     
     case 'yes'
-       
         % fit rise of spark in time profile
         optFit = optimoptions('lsqnonlin','TolFun',1e-9,'TolX',1e-9,...
             'MaxIter',1000,'MaxFunEvals',3000,'Display','off');
@@ -52,22 +55,22 @@ switch piecewise
         funD_eval = @(p,xD) ( p(1).*exp(-(xD-p(2))/p(3)) + p(4) ); 
         
         % rise part
-        xR = x_E(1:maxP);
-        yR = y_E(1:maxP);
+        xR = x(1:maxP);
+        yR = y(1:maxP);
         
         % correct for start of mask of event, also x start form 0
-        if p0(1) > (maxP+sE-1)*dx - dx - 3           
-            p0(1) = (maxP+sE-1)*dx - dx - 3;
+        if p0(1) > maxP*dx - dx - 3           
+            p0(1) = maxP*dx - dx - 3;
         end
-        
-        if p0(1) < 0, p0(1) = 1; end
-        
-        p0Rise = [p0(1) 3 maxV p0(2)];  % [t0 tauR A bs]
+        if p0(1) < 0, p0(1) = x(1); end
+        % p0 estimate [t0 tauR A bs]
+        p0Rise = [p0(1) (maxP-sE)*dx*0.66 maxV p0(2)];  
         % fit rise 
-     
         try
-            coeffRise = lsqnonlin(@(p)funR(p,xR,yR),p0Rise,...
-                [x(sE)-dx,0,0,min(yR)],[(maxP+sE-2)*dx-dx inf inf inf],optFit);
+            coeffRise = lsqnonlin(@(p)funR(p,xR,yR), p0Rise,...
+                [x(sE)-dx, 0, 0, min(yR)], ...
+                [maxP*dx-dx inf inf inf], ...
+                optFit);
             t0 = coeffRise(1);
             bs = coeffRise(4);
         catch
@@ -75,10 +78,10 @@ switch piecewise
             bs = p0(2);
         end
         
-        bs_end = mean(y_E(end-2:end)); 
+        bs_end = mean(y(eE:end)); 
         
         % estimate tauR     
-        t0_p = floor((t0-x(sE))/dx); % t0 in points, adjust for start of event
+        t0_p = floor(t0/dx); % t0 in points, adjust for start of event
         if t0_p<1, t0_p = 1; end
         
         % check if tauR make sense
@@ -97,16 +100,16 @@ switch piecewise
         end
         
         % estimate tauD
-        xD = x_E(maxP+1:end);
-        yD = y_E(maxP+1:end);
+        xD = x(maxP+1:end);
+        yD = y(maxP+1:end);
         [~,p_tauD] = min( abs( yD - (0.33*(maxV-bs_end)+bs_end) ) );   
         tauD_est = p_tauD*dx;
         
         % fit decay
         try
             p0Decay = [maxV xD(1) tauD_est bs_end];
-            coeffDecay = lsqnonlin(@(p)funD(p,xD,yD),p0Decay,...
-                zeros(1,4),ones(1,4).*inf,optFit);
+            coeffDecay = lsqnonlin(@(p)funD(p,xD,yD), p0Decay,...
+                zeros(1,4), ones(1,4).*inf, optFit);
             tauDFitExp = coeffDecay(3);
         catch
             tauDFitExp = tauD_est;
@@ -129,7 +132,7 @@ switch piecewise
 %                                 (x>p(5)).*( p(4).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );     
                 p0(3) = tauR_est;
                 p0(4) = A_est;
-                p0(6) = tauD_est;
+                p0(6) = tauDFitExp;
                            
                 fitFun = @(p,x) (x<p(1)).*p(2) + ...
                                 (x>=p(1) & x<p(5)).*( p(2)+(1-exp(-(x-p(1))./p(3))).* (p(4)-p(2))) + ...
@@ -224,14 +227,11 @@ switch piecewise
         bs = coef(2);
         t0 = coef(1);
 
-%         figure
-%         plot(x,y)
-%         hold on
-%         plot(x,fitFun(p0,x),'r')
-%         plot(x,fitFun(coef,x),'g')
-
-
-
+        % figure
+        % plot(x,y)
+        % hold on
+        % plot(x,fitFun(p0,x),'r')
+        % plot(x,fitFun(coef,x),'g')
 
     case 'no'
         
@@ -255,10 +255,12 @@ switch piecewise
                 %fitFunSum = @(p,x,y) sum( (y-fitFun(p,x)).^2 );
                 coef = fmincon(@(p)fitFunSum(p,x,y,wE),p0,...
                     [],[],[],[],...
-                    [min(y),0,0,min(x_E)],...
-                    [max(y_E) max(y_E) max(x_E)-min(x_E) max(x_E)],...
-                    [],opt);
-                
+                    [min(y), 0, 0, min(x_E)],...
+                    [max(y_E) inf max(x_E)-min(x_E) max(x_E)],...
+                    [], opt);
+                if coef(3)<dx
+                    coef = p0;
+                end
                 % refit without weights
                 wE = ones(size(y));
                 coef = fmincon(@(p)fitFunSum(p,x,y,wE),coef,...

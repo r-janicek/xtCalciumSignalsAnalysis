@@ -129,7 +129,7 @@ switch typeOfCalc
         % get fit function and baseline mask
         switch getappdata(mainFig,'analysisType')
             case {'spark recovery ryanodine', 'spark detection'}
-                typeFit = 'poly1';
+                typeFit = 'poly2';
                 % try to find all events without filtering and
                 % applying watershed
                 [allEventsMask, ~] = spark_detect_vst(imgDataXTfluoRN, ...
@@ -189,27 +189,30 @@ z_min_img = min(min(img_data_n));
 %z_min_img = prctile(img_data_n,1,'all');
 
 % plot normalized image 
-ax_img = hObjs.ax_img;
-whole_img_h = findobj(ax_img, 'Type','Image');
+whole_img_h = findobj(hObjs.ax_img, 'Type','Image');
 set(whole_img_h, 'CData',img_data_n, ...
     'XData',[0 max(t)], ...
     'YData',[1 size(img_data_n,1)])
 %set(ax_img,'CLim',prctile(img_data_n(:),[0.1 99.9]))
-set(ax_img, 'CLim',[z_min_img z_max_img])
-set(ax_img, 'XLim',[0 max(t)], 'YLim',[1 size(img_data_n,1)])
-set(ax_img, 'XTick',[])
-set(get(ax_img, 'Ylabel'), 'String','x (pixels) [filtered & normalized]')
+set(hObjs.ax_img, 'CLim',[z_min_img z_max_img])
+set(hObjs.ax_img, 'XLim',[0 max(t)], 'YLim',[1 size(img_data_n,1)])
+set(hObjs.ax_img, 'XTick',[])
+set(get(hObjs.ax_img, 'Ylabel'), 'String','x (pixels) [filtered & normalized]')
+hObjs.ax_img.Toolbar.Visible = 'off';
 
 % plot normalized time profile
-ax_prof = hObjs.ax_prof;
-plot(t, mean(img_data_n,1), 'Parent',ax_prof)
-set(ax_prof, 'Xlim',[t(1) t(end)], ...
+plot(t, mean(img_data_n,1), 'Parent',hObjs.ax_prof)
+set(hObjs.ax_prof, 'Xlim',[t(1) t(end)], ...
     'YLim', getAxisLimits(mean(img_data_n, 1), 5),...
     'FontSize',14)
-set(get(ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
-set(get(ax_prof,'Ylabel'), 'String','fluorescence (\DeltaF/F0)', ...
+set(get(hObjs.ax_prof,'Xlabel'), 'String','t (ms)', 'FontWeight','bold')
+set(get(hObjs.ax_prof,'Ylabel'), 'String','fluorescence (\DeltaF/F0)', ...
     'FontWeight','bold')
+hObjs.ax_prof.Toolbar.Visible = 'off';
 
+% disable built-in axes interactions
+arrayfun(@(x) disableDefaultInteractivity(x), ...
+    findall(mainFig, 'Type', 'Axes'))
 % save data 
 imgData.imgDataXTfluoFN = img_data_n;
 imgData.imgDataXTfluoRN = img_data_n_raw;
