@@ -17,7 +17,7 @@ imgData.blank = blank;
 % select type of calculation of normalization 
 switch getappdata(mainFig,'analysisType')
     case {'spark recovery ryanodine', 'spark detection'}
-        if hObjs.check_bsFit.Value
+        if hObjs.check_doBsFit.Value
             typeOfCalc = 2;
         else
             typeOfCalc = 1;

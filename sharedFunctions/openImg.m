@@ -163,7 +163,7 @@ try
             pxSzT = str2double(metaDataS.GlobalTimePerLine)/1000;  
         case '.oif'
             pxSzT = str2double(metaDataS.GlobalTimePerLine)/1000;   
-        case '.tiff'
+        case {'.tiff', '.tif'}
             pxSzT = double(omeMetaData.getPlaneDeltaT(0,0).value);    
     end
     % spatial dimension (µm)

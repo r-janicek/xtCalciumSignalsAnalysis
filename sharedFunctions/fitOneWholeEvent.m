@@ -69,7 +69,7 @@ switch piecewise
         try
             coeffRise = lsqnonlin(@(p)funR(p,xR,yR), p0Rise,...
                 [x(sE)-dx, 0, 0, min(yR)], ...
-                [maxP*dx-dx inf inf inf], ...
+                [x(maxP)-dx inf inf inf], ...
                 optFit);
             t0 = coeffRise(1);
             bs = coeffRise(4);
@@ -81,7 +81,7 @@ switch piecewise
         bs_end = mean(y(eE:end)); 
         
         % estimate tauR     
-        t0_p = floor(t0/dx); % t0 in points, adjust for start of event
+        t0_p = floor((t0-x(1))/dx); % t0 in points, adjust for start of event
         if t0_p<1, t0_p = 1; end
         
         % check if tauR make sense

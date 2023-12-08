@@ -38,13 +38,23 @@ end
     oldAnalysisInfo, 'UniformOutput',1)==1);
 [rBlank,~] = find(cellfun(@(x) ~isempty(strfind(x,'blank:')), ...
     oldAnalysisInfo, 'UniformOutput',1)==1);
+rPxSzX = find(cellfun(@(x) ~isempty(strfind(x,'px size x (um)')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+rPxSzT = find(cellfun(@(x) ~isempty(strfind(x,'px size t (ms)')), ...
+    oldAnalysisInfo, 'UniformOutput',1)==1);
+
 [rExpS,~] = find(cellfun(@(x) ~isempty(strfind(x,'exp_notes:')), ...
     oldAnalysisInfo, 'UniformOutput',1)==1);
 rExpE = find( cellfun(@(x) all(ismissing(x)), ...
     oldAnalysisInfo(rExpS+1:end,1)), 1, 'first');
 
+
 animal = oldAnalysisInfo{rA,2};
-expInfo = oldAnalysisInfo(rExpS+1:rExpS+rExpE-1,1);
+if isempty(rExpE)
+    expInfo = oldAnalysisInfo(rExpS+1:end, 1);
+else
+    expInfo = oldAnalysisInfo(rExpS+1:rExpS+rExpE-1, 1);
+end
 blank = oldAnalysisInfo{rBlank,2};
 
 % set up main window
@@ -58,6 +68,19 @@ set(hObjs.h_table_notes,'Data',expInfo)
 % set up blank value
 hObjs.h_edit_Blank.String = blank;
 
+% set up pizel values in edit fields
+try
+    hObjs.h_edit_pxSzX.String = num2str(oldAnalysisInfo{rPxSzX,2});
+    hO_sim.Tag = 'pxSzX';
+    hO_sim.String = num2str(oldAnalysisInfo{rPxSzX,2});
+    setPxSzManually(hO_sim, [], mainFig)
+
+    hObjs.h_edit_pxSzT.String = num2str(oldAnalysisInfo{rPxSzT,2});
+    hO_sim.Tag = 'pxSzT';
+    hO_sim.String = num2str(oldAnalysisInfo{rPxSzT,2});
+    setPxSzManually(hO_sim, [], mainFig)
+catch 
+end
 
 end
 
