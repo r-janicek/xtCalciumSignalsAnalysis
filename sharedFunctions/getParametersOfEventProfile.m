@@ -143,6 +143,22 @@ if ~isempty(t_prof)
             FDHM=0;
         end
 
+        % %%%%%%%%%%%
+        % % get full duration in half maximum
+        % [FDHM, half_max_t, half_max_t_1, half_max_t_2] = ...
+        %     fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50);
+        % [FD_05, val_05, pos_05_t_1, pos_05_t_2] = ...
+        %     fullDurationCalc(x, y, sE, eE, val_t, pos_t, bs, 5);
+        % 
+        % [~, ~, ~, ~, pos_10_1] = fullDurationCalc( ...
+        %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 10);
+        % [~, ~, ~, ~, pos_90_1] = fullDurationCalc( ...
+        %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 90);
+        % % calculate max value of derivation
+        % t_prof(pos_10_1:pos_90_1,1)
+        % gradient( t_prof(pos_10_1:pos_90_1,1)./mean(diff(t)))
+        % %%%%%%%%%%%
+
     catch
         FDHM = w_t(1);
         half_max_t = nan;
