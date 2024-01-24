@@ -68,97 +68,17 @@ if ~isempty(t_prof)
     end
 
     try
-        % half maximum value
-        half_max_t = (val_t - bs_t)*0.5 + bs_t;
-        max_t_25perc = (val_t - bs_t)*0.25 + bs_t;
-        max_t_75perc = (val_t - bs_t)*0.75 + bs_t;
-
-        % parts of profiles before and after maximum of event
-        % extend, to be sure points with 25% and 50% of max values are there
-        t_prof_beforePeak = t_prof(1:pos_t-1);
-        t_prof_beforePeak = flipud(t_prof_beforePeak(:));
-        % before peak
-        sE = min(sE, ...
-            numel(t_prof_beforePeak) - ...
-            find((t_prof_beforePeak-max_t_25perc) < 0, 1, 'first'));
-        % after peak
-        t_prof_afterPeak = t_prof(pos_t:end);
-        p_50_afterPeak = pos_t + ...
-            find((t_prof_afterPeak-half_max_t) < 0, 1, 'first');
-        if (isempty(p_50_afterPeak) || p_50_afterPeak>numel(t_prof))
-            p_50_afterPeak = numel(t_prof);
-        end
-        eE = max(eE, p_50_afterPeak);
-
-        if sE>1
-            y_t1 = [ -inf(sE-1,1); t_prof(sE:pos_t-1) ];
-        else
-            y_t1 = t_prof(1:pos_t-1);
-        end
-        y_t2 = [ -inf(pos_t-1,1); t_prof(pos_t:eE) ];
-
-        % find position of first half max position
-        y_t1_r = flipud(y_t1);
-        d_y_t1 = gradient(y_t1_r);
-        if all(d_y_t1==0)
-            pos_25 = numel(d_y_t1);
-            pos_75 = numel(d_y_t1);
-            pos_50_1 = numel(d_y_t1);
-        else
-            indDer1_25 = find( d_y_t1<=0 & y_t1_r<max_t_25perc, 1, 'first');
-            indDer1_50 = find( d_y_t1<=0 & y_t1_r<half_max_t, 1, 'first')+1;
-            if indDer1_50 > numel(y_t1_r), indDer1_50 = numel(y_t1_r); end
-            y_t1_r_25 = y_t1_r;
-            y_t1_r_50 = y_t1_r;
-            if ~isempty(indDer1_25), y_t1_r_25(indDer1_25:end) = -inf; end
-            if ~isempty(indDer1_50), y_t1_r_50(indDer1_50:end) = -inf; end
-
-            y_t1_25 = flipud(y_t1_r_25);
-            y_t1_50 = flipud(y_t1_r_50);
-
-            [~,pos_50_1] = min(abs(y_t1_50 - half_max_t));
-            % find also positions of 25 and 75% of amplitude
-            [~,pos_25] = min(abs(y_t1_25 - max_t_25perc));
-            [~,pos_75] = min(abs(y_t1_50 - max_t_75perc));
-        end
-
-        % find position of second half max position
-        d_y_t2 = gradient(y_t2);
-
-        indDer2 = find( d_y_t2<0 & y_t2<half_max_t & t_indx(1:eE)>pos_t, ...
-            1, 'first')+1;
-        if indDer2 > numel(y_t2), indDer2 = numel(y_t2); end
-        if ~isempty(indDer2), y_t2(indDer2:end) = -inf; end
-
-        [~,pos_50_2] = min(abs(y_t2 - half_max_t));
-
-        % positions in time
-        half_max_t_1 = t(pos_50_1);
-        half_max_t_2 = t(pos_50_2);
         % get full duration in half maximum
-        FDHM = half_max_t_2 - half_max_t_1;
-        if FDHM<0
-            FDHM=0;
-        elseif isempty(FDHM)
-            FDHM=0;
-        end
-
-        % %%%%%%%%%%%
-        % % get full duration in half maximum
-        % [FDHM, half_max_t, half_max_t_1, half_max_t_2] = ...
-        %     fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50);
-        % [FD_05, val_05, pos_05_t_1, pos_05_t_2] = ...
-        %     fullDurationCalc(x, y, sE, eE, val_t, pos_t, bs, 5);
-        % 
-        % [~, ~, ~, ~, pos_10_1] = fullDurationCalc( ...
+        [FDHM, half_max_t, half_max_t_1, half_max_t_2] = ...
+            fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50);
+        [~, ~, ~, ~, pos_25, ~] = fullDurationCalc( ...
+            t, t_prof, sE, eE, val_t, pos_t, bs_t, 25);
+        [~, ~, ~, ~, pos_75, ~] = fullDurationCalc( ...
+            t, t_prof, sE, eE, val_t, pos_t, bs_t, 75);
+        % [~, ~, ~, ~, pos_10, ~] = fullDurationCalc( ...
         %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 10);
-        % [~, ~, ~, ~, pos_90_1] = fullDurationCalc( ...
+        % [~, ~, ~, ~, pos_90, ~] = fullDurationCalc( ...
         %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 90);
-        % % calculate max value of derivation
-        % t_prof(pos_10_1:pos_90_1,1)
-        % gradient( t_prof(pos_10_1:pos_90_1,1)./mean(diff(t)))
-        % %%%%%%%%%%%
-
     catch
         FDHM = w_t(1);
         half_max_t = nan;
@@ -170,11 +90,12 @@ if ~isempty(t_prof)
 
     % find t0 (start of spark) as a cross section of 0 and line fit of part
     % of event with amplitudes between 25 and 75 % of max amplitude
-
     if pos_25 == pos_75
         pos_25 = pos_25 - 1;
     end
-
+    if pos_25 == pos_75
+        pos_25 = pos_25 - 1;
+    end
     if isempty(t0)
         try
             f_line25_75 = fit(t(pos_25:pos_75),t_prof(pos_25:pos_75),'poly1');
@@ -187,14 +108,7 @@ if ~isempty(t_prof)
             t0 = t( numel(t_prof) - ...
                 find(flipud(t_prof) < ((val_t-bs_t)/50 + bs_t), 1, 'first') + 1);
         end
-
-        %     if isempty(t0)
-        %         % find t0, start of spark, 0.05 set manually, not really nice
-        %         t0 = t( find(t_prof > ((val_t-bs_t)/50 + bs_t),1,'first'));
-        %     end
-
     end
-
     % get time to peak
     TTP = t(pos_t) - t0;
     if TTP<0
