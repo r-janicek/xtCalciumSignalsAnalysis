@@ -58,11 +58,11 @@ imgSzX = imgSzPx(1)*pxSzX;        % um
 imgSzT = imgSzPx(2)*pxSzT;        % ms
 
 % create sparks data table
-
 dataSparks = struct2table(sparkDetection.eventParams);
 dataSparks.maskOfAcceptedSparks = sparkDetection.maskOfAcceptedSparks(:);
 dataSparks.Properties.VariableUnits = ...
-    {'deltaF/F0' 'ms' 'ms' 'ms' 'um' 'deltaF/F0*um^3' 'ms' 'deltaF/F0*ms' '' ''};
+    {'deltaF/F0' 'ms' 'ms' 'ms' 'um' ...
+     'deltaF/F0*um^3' 'ms' 'ms' 'deltaF/F0*ms' '' ''};
 
 resultSparksParamsNames = cellfun(@(x,y) [x,' (',y,')'], ...
     dataSparks.Properties.VariableNames, ...

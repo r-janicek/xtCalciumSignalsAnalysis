@@ -14,7 +14,6 @@ function out = fitOneWholeEvent(...
 % mProf = mask of profile 
 
 if isempty(mProf), mProf = ones(size(x)); end
-if isempty(x_ups), x_ups = x; end
 
 % data
 x = x(:);
@@ -115,11 +114,13 @@ switch piecewise
             tauDFitExp = tauD_est;
         end
         % estimate amplitude 
-        A_est = maxV/(1-exp(-((maxP+sE-1)*dx-dx-t0)/tauR_est));         
+        A_est = maxV/(1-exp(-((maxP+sE-1)*dx-dx-t0)/tauR_est));
+                 
         p0(1) = t0;
         p0(2) = bs;
                       
-        switch model           
+        switch model
+                       
             case '1expR1expD'
                 % Lacampagne et al, 1999
 %                 coefficients: [t0, F01, tauR, A, t1, tauD, F02]
@@ -128,11 +129,13 @@ switch piecewise
 %                                 (x>p(5)).*( p(4).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );     
                 p0(3) = tauR_est;
                 p0(4) = A_est;
-                p0(6) = tauDFitExp;           
+                p0(6) = tauDFitExp;
+                           
                 fitFun = @(p,x) (x<p(1)).*p(2) + ...
                                 (x>=p(1) & x<p(5)).*( p(2)+(1-exp(-(x-p(1))./p(3))).* (p(4)-p(2))) + ...
                                 (x>=p(5)).*( (p(4)-p(7)).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );                  
                                                                     
+ 
             case 'spline'
                 % coefficients: [t0, F01, spline coefficients]
                 nK = ceil((max( x(x>p0(1)))-min( x(x>p0(1))))/5);
@@ -147,15 +150,18 @@ switch piecewise
                 p0 = [p0(1), p0(2), spl0.coefs];
                 
                 fitFun = @(p,x) (x <= p(1)) .*  p(2) + (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x);        
-        end       
+        end
+               
         % put more weights to event than to baseline
         wE = zeros(size(y));
-        wE(mProf) = ( 1 + y(mProf)./max(y(mProf)) ).^2;  
+        wE(mProf) = ( 1 + y(mProf)./max(y(mProf)) ).^2;
+        
         % do fitting
         % create function which will be optimize, return scalar
         fitFunSum = @(p,x,y) sum( wE .* (y-fitFun(p,x)).^2 );
         
         switch  model
+            
             case 'spline'
                 coef = p0;
                 tauD = tauDFitExp;
@@ -165,12 +171,15 @@ switch piecewise
                 try
                     lb = zeros(size(p0));
                     ub = inf(size(p0));
+                     
                     % first fit with fixed t0, t1, baseline and tauR = these were estimated
                     lb(1) = p0(1); ub(1) = p0(1);
                     lb(2) = p0(2); ub(2) = p0(2);
                     lb(3) = p0(3); ub(3) = p0(3);
                     lb(5) = p0(5); ub(5) = p0(5);
+                    
                     coef = fmincon(@(p)fitFunSum(p,x,y),p0,[],[],[],[],lb,ub,[],opt);
+                    
                     % refit with no bound
                     lb = zeros(size(p0));
                     ub = inf(size(p0));
@@ -187,15 +196,19 @@ switch piecewise
                     % newknt for a possibly better knot distribution
                     knots = newknt(spl0);
                     spl0  = spap2(knots, splOrd, x(x>p0(1)), y(x>p0(1)));
+                    
                     nK = numel(spl0.knots);
+                    
                     p0 = [p0(1), p0(2), spl0.coefs];
-                    fitFun = @(p,x) (x <= p(1)) .*  p(2) + (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x); 
+                    
+                    fitFun = @(p,x) (x <= p(1)) .*  p(2) + (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x);
+                    
                     coef = p0;
                     tauD = tauDFitExp;
                     tauR = tauR_est;
                 end   
         end
-        % get fit 
+        
         yFit = fitFun(coef,x);
         if ~isempty(x_ups)
             yFit_ups = pchip(x,yFit,x_ups);
@@ -203,6 +216,7 @@ switch piecewise
             x_ups = [];
             yFit_ups = [];
         end
+        
         bs = coef(2);
         t0 = coef(1);
 
@@ -212,8 +226,10 @@ switch piecewise
         % plot(x,fitFun(p0,x),'r')
         % plot(x,fitFun(coef,x),'g')
 
-    case 'no' 
+    case 'no'
+        
         switch  model
+            
             case 'Gauss'
                 % fit with gaussian
                 % coefficients: [F0,A,w,xc]
@@ -262,6 +278,7 @@ switch piecewise
                 % hold on
                 % plot(x_ups,fitFun(coef,x_ups),'r')
                 
+ 
             case 'EMG'
                 % fit with exponentially modified gaussian
                 % coefficients: [A,m,sd,tau,F0]
@@ -290,6 +307,7 @@ switch piecewise
                 % newknt for a possibly better knot distribution
                 knots = newknt(spl0);
                 spl0  = spap2(knots, splOrd, x, y);
+                
                 fitFun = @(p,x) fnval(spmak(spl0.knots,spl0.coefs),x);
                 coef = [];
                 model = 'spline';
@@ -312,10 +330,7 @@ switch piecewise
                 tauR = nan;
         end
         t0 = nan;
-        coeffRise = [];
-        funR_eval = [];
-        funD_eval = [];
-        coeffDecay = [];
+        
 end
 
 % create output structure
@@ -337,3 +352,6 @@ out = struct('fitModel',model,...
     'yFitFunD',funD_eval, ...
     'coeffDecay',coeffDecay);
 end
+
+funR_eval = [];
+funD_eval = [];

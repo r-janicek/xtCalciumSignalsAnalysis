@@ -6,6 +6,7 @@ img_ext = 'bmp';
 maxImgSzT = 1000; % pixels
 % get data
 imgData = getappdata(mainFig, 'imgData');
+hObs = getappdata(mainFig, 'hObjs');
 if isempty(imgData)
     return
 end
@@ -35,7 +36,11 @@ else
 end
 % split image if its size in time is more than 1000 pixels and save them in
 % selected dir
-wholeImg = imrotate(im2uint8(rescale(imgData.imgDataXTfluoR)),-90);
+% first normalize image in range (0,1) then rotate it and convert to 8bit
+wholeImg = imrotate( ...
+    im2uint8( ...
+    normalize( ...
+    imgData.imgDataXTfluoR-imgData.blank,'range') ), -90);
 if size(wholeImg,1) > maxImgSzT
     n_imgs = ceil(size(wholeImg,1)/maxImgSzT);
     for i = 1:n_imgs
@@ -54,7 +59,7 @@ else
 end
 % save csv file with pixel size
 pxSz = [{'x (µm)', imgData.pxSzX}; ...
-        {'t (ms)', imgData.pxSzT}];
+              {'t (ms)', imgData.pxSzT}];
 writecell(pxSz, ...
     fullfile(splittedImgDir,sprintf('%s.csv',img_n)))
 

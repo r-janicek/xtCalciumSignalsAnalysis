@@ -663,7 +663,6 @@ else
     eventParams.FWHM = [];
     eventParams.sparkMass = [];
     eventParams.tauD = [];
-    eventParams.tauR = [];
     eventParams.AUC_2DFit = [];
     eventParams.sparkROINum = [];
 end
