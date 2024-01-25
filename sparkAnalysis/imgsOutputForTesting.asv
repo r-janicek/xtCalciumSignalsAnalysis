@@ -13,7 +13,7 @@ end
 % ask where to save splitted images
 % previous path
 try
-    prevPath = getappdata(mainFig, 'allSplittedImgsDir');
+    prevPath = getappdata(mainFig, 'folderWithSplittedImgs');
 catch
 end
 if isempty(prevPath)
@@ -21,10 +21,6 @@ if isempty(prevPath)
 end
 allSplittedImgsDir = uigetdir(prevPath, ...
     'select folder to save splitted images');
-if allSplittedImgsDir == 0
-    return
-end
-setappdata(mainFig, 'allSplittedImgsDir', allSplittedImgsDir)
 [~,img_n,~] = fileparts(imgData.fileName);
 % create folder with image name
 if exist(fullfile(allSplittedImgsDir,img_n), 'dir')
@@ -43,8 +39,11 @@ end
 % first normalize image in range (0,1) then rotate it and convert to 8bit
 wholeImg = imrotate( ...
     im2uint8( ...
-    rescale( ...
-    imgData.imgDataXTfluoR-imgData.blank) ), -90);
+    normalize( ...
+    imgData.imgDataXTfluoR-imgData.blank,'range','range',[0,1]) ), -90);
+figure
+imagesc(wholeImg)
+
 
 if size(wholeImg,1) > maxImgSzT
     n_imgs = ceil(size(wholeImg,1)/maxImgSzT);
