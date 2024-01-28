@@ -9,7 +9,7 @@ hObjs = getappdata(mainFig,'hObjs');
 switch detectEventsPB.Tag
     
     case 'findEvents'
-        eventsDetection(detectEventsPB,[],mainFig)
+        eventsDetection(detectEventsPB,[],mainFig,'new')
         
     otherwise 
         profileAnalysis = getappdata(mainFig,'profileAnalysis');

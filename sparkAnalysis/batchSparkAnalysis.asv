@@ -573,7 +573,7 @@ else
         {'' '' '' '' '' '' '' 'minutes' ...
         '#sp*100um-1*s-1' '#sp*100um-1*s-1' ...
         'deltaF/F0' 'ms' 'ms' 'ms' 'um' 'deltaF/F0*um^3' ...
-        'ms' 'ms' 'deltaF/F0*ms' '' '' '' '' '' '' 'um' 'ms'};
+        'ms' 'ms' 'deltaF/F0*ms' '' '' 'um' 'ms'};
 
 
 end
@@ -583,6 +583,7 @@ drawnow
  
 
 %% save all sparks table 
+
 % set up path for xls file
 path_xls = fullfile(folderPath,'sparkDetResults.xls');
 
@@ -629,6 +630,10 @@ infoCellArr = [ [analysisOf, cell(1,1)]; cell(1,2); ...
                 parametersOfSparkDetection; cell(1,2); ...
                 sparkSelectionCriteria];
 writecell(infoCellArr,path_xls,'Sheet','info');
+
+% xlwrite(path_xls, analysisOf, 'info', 'A1');
+% xlwrite(path_xls, parametersOfSparkDetection, 'info', 'A3');
+% xlwrite(path_xls, sparkSelectionCriteria, 'info', 'A14');
 
 % check for the length of result table if it not too much for .xls (more than 60000)
 % than split it

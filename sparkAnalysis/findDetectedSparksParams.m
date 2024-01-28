@@ -336,6 +336,10 @@ if ~isempty(statSparks)
         end
         
         eventParams.sparkROINum(i,1) = sparkROInum;
+        eventParams.BoundingBox_x(i,1) = statSparks(i).BoundingBox(1);
+        eventParams.BoundingBox_y(i,1) = statSparks(i).BoundingBox(2);
+        eventParams.BoundingBox_w(i,1) = statSparks(i).BoundingBox(3);
+        eventParams.BoundingBox_h(i,1) = statSparks(i).BoundingBox(4);
         
         % show  individual calcium events
         if hObjs.check_showEventsFigs.Value
@@ -666,6 +670,10 @@ else
     eventParams.tauR = [];
     eventParams.AUC_2DFit = [];
     eventParams.sparkROINum = [];
+    eventParams.BoundingBox_x = [];
+    eventParams.BoundingBox_y = [];
+    eventParams.BoundingBox_w = [];
+    eventParams.BoundingBox_h = [];
 end
 
 % put back pointer to arrow

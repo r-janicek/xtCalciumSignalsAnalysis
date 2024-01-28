@@ -1,6 +1,5 @@
 function saveSparkDetAnalysis(~, ~, mainFig)
 % save sparks analysis
-
 % get data and get path where to save results
 imgData = getappdata(mainFig,'imgData');
 sparkDetection = getappdata(mainFig,'sparkDetection');
@@ -62,7 +61,8 @@ dataSparks = struct2table(sparkDetection.eventParams);
 dataSparks.maskOfAcceptedSparks = sparkDetection.maskOfAcceptedSparks(:);
 dataSparks.Properties.VariableUnits = ...
     {'deltaF/F0' 'ms' 'ms' 'ms' 'um' ...
-     'deltaF/F0*um^3' 'ms' 'ms' 'deltaF/F0*ms' '' ''};
+     'deltaF/F0*um^3' 'ms' 'ms' 'deltaF/F0*ms' ...
+     '' '' '' '' '' ''};
 
 resultSparksParamsNames = cellfun(@(x,y) [x,' (',y,')'], ...
     dataSparks.Properties.VariableNames, ...
