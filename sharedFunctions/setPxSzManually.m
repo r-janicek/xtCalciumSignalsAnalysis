@@ -46,6 +46,12 @@ switch hO.Tag
         end
 
 end
+% filter data
+[imgDataXTfluo, imgData.imgFiltersUsed] = imgFiltering( ...
+    imgData.imgDataXTfluoR, imgData.pxSzT, imgData.pxSzX);
 % save changed image data
+imgData.imgDataXTfluoF = imgDataXTfluo;
+imgData.imgDataXTfluoFN =imgDataXTfluo;
 setappdata(mainFig, 'imgData', imgData)
+
 end
