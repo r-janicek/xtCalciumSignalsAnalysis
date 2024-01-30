@@ -142,13 +142,13 @@ switch piecewise
                 splOrd = 4; % spline order, poly3
                 spl0  = spap2(nK, splOrd, x(x>p0(1)), y(x>p0(1)));  % first guess of spline coefficients
                 % newknt for a possibly better knot distribution
-                try
-                    knots = newknt(spl0);
-                    spl0  = spap2(knots, splOrd, x(x>p0(1)), y(x>p0(1)));
-                catch
-                end
+                knots = newknt(spl0);
+                spl0  = spap2(knots, splOrd, x(x>p0(1)), y(x>p0(1)));
+                
                 nK = numel(spl0.knots);
+                
                 p0 = [p0(1), p0(2), spl0.coefs];
+                
                 fitFun = @(p,x) (x <= p(1)) .*  p(2) + ...
                     (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x);        
         end       

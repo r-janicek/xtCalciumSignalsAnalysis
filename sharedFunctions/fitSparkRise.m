@@ -4,12 +4,11 @@ function [h_line, detectedEventsMask, coef, sp_fit, ...
     smooth_span, bs_crit, sSpPrev, eSpPrev, prof_t_evnts_m)
 
 % locs in time units
-options = optimoptions('lsqnonlin','TolFun',tol,'TolX',tol,'MaxIter',iter,...
-    'MaxFunEvals',3*iter,'Display','off');
-
+options = optimoptions('lsqnonlin', 'TolFun',tol, ...
+    'TolX',tol, 'MaxIter',iter,...
+    'MaxFunEvals',3*iter, 'Display','off');
 fun_e = @(x,t) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
-        (t<x(1)).*(x(4)));
-    
+        (t<x(1)).*(x(4)));  
 fun = @(x,t,ys) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
          (t<x(1)).*(x(4)))-ys;
 
@@ -125,9 +124,10 @@ if ~isempty(pks)
             
             t0FirstEst = locs(i)-10;
             [~,t0FirstEstPx] = min( abs( t-t0FirstEst ) );
-            t0FirstEstPx = l_s(idx_p) - find(~prof_t_evnts_m(1:l_s(idx_p)),1,'last');
+            t0FirstEstPx = l_s(idx_p) - ...
+                find(~prof_t_evnts_m(1:l_s(idx_p)), 1, 'last');
             if t0FirstEstPx <= 0
-                t0FirstEstPx = 3; % first five points
+                t0FirstEstPx = 3; % first 3 points
             end
             y0 = mean(ys(1:t0FirstEstPx));
             try
@@ -149,23 +149,25 @@ if ~isempty(pks)
                 tR_est = t(p_75)-t(p_25);
                 if tR_est<mean(diff(t)), tR_est = 3; end
                 if t0_ind_est<1, t0_ind_est = 1; end
-                % t0,tR,A,y0
+                % t0, tR, A, y0
                 x0 = [t(t0_ind_est) tR_est A-y0 y0];
             catch
-                % t0,tR,A,y0
+                % t0, tR, A, y0
                 x0 = [locs(i)-10 5 A y0];
             end
         end
 
         try
             x = lsqnonlin(@(x)fun(x,t,ys), x0, ...
-                [zeros(1,3),min(ys)], inf(1,4), ...
+                [min(t) 0 min(ys) min(ys)], ...
+                [max(t) max(t)-min(t) max(ys)-min(ys) max(ys)], ...
                 options);
         catch
             try
                 sumSqrs = @(x,t,ys) sum(fun(x,t,ys).^2);
                 x = fmincon(@(x)sumSqrs(x,t,ys),x0,[],[],[],[],...
-                    [zeros(1,3),min(ys)],ones(1,4).*inf);
+                    [min(t) 0 min(ys) min(ys)], ...
+                    [max(t) max(t)-min(t) max(ys)-min(ys) max(ys)]);
             catch
                 x = x0;
             end

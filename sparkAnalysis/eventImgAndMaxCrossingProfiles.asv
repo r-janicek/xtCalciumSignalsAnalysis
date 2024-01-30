@@ -151,11 +151,14 @@ try
     % event data only, else NaN
     imgE_s = imgEs;
     imgE_s(~imgEm) = nan;
+
+    figure
+    imagesc(imgE_s)
+
     % get position of centre of expanded event
     % centr = statEvents(i).WeightedCentroid;
     % r_m = round(centr(2)) - rows_e(1)+1;
-    prof_t_imgE_s = mean(imgE_s(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), ...
-        1, "omitmissing");
+    prof_t_imgE_s = mean(imgE_s(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), 1);
     %[r_m,c_m] = find(imgE_s==max(imgE_s(:)));
     [~, c_m] = max(prof_t_imgE_s);
 
