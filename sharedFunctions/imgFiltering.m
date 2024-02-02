@@ -4,8 +4,8 @@ function [img_filt,filters] = imgFiltering(img_raw,pxSzT,pxSzX)
 % weigted median filter, to preserve structures (add in case needed)
 
 % find max window 
-n_t = ceil(10/pxSzT);
-n_x = ceil(1/pxSzX);
+n_t = max(ceil(10/pxSzT), 3);
+n_x = max(ceil( 1/pxSzX), 3);
 
 n = min(n_t,n_x);
 if mod(n,2)==0 || n == 0

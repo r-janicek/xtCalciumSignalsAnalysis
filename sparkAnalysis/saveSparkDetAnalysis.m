@@ -383,20 +383,29 @@ end
  
 % get path to save figures 
 [pathFigs, nameFigs,~] = fileparts(path_xls);
-
+% output file path with selected format
+outputFiguresFilePath = sprintf('%s/%s.%s', pathFigs, nameFigs, ...
+    hObjs.outputFileFormatRBgroup.SelectedObject.String);
 % delete files if exist
-if exist(sprintf('%s/%s.pdf',pathFigs, nameFigs), 'file')
-    delete(sprintf('%s/%s.pdf',pathFigs, nameFigs))
+if exist(outputFiguresFilePath, 'file')
+    delete(sprintf('%s/%s.pdf', pathFigs, nameFigs))
+end
+% ask if delete also other file formats if present
+if exist(sprintf('%s/%s.gif', pathFigs, nameFigs), 'file') || ...
+        exist(sprintf('%s/%s.tif', pathFigs, nameFigs), 'file') || ...
+        exist(sprintf('%s/%s.ps', pathFigs, nameFigs), 'file')
+    answer = questdlg( ...
+        'Would you like to delete analysis file with different format (.pdf, .gif, .ps)?', ...
+	    'Output analysis files in different file format.', ...
+	    'YES', 'NO', 'NO');
+    switch answer
+        case 'YES'
+            delete(sprintf('%s/%s.gif', pathFigs, nameFigs))
+        case 'NO'
+    end
 end
 
-if exist(sprintf('%s/%s.ps',pathFigs,nameFigs), 'file')
-    delete(sprintf('%s/%s.ps',pathFigs,nameFigs))
-end
-
-% path to ghostscript
-% add in future to make smaller size pdfs
-
-% save figures as .ps and also .pdf
+% save figures as .gif or .pdf
 if ~isempty(allHtoSave)
     for i = 1:numel(allHtoSave)     
         % set upfigures for printing
@@ -406,21 +415,18 @@ if ~isempty(allHtoSave)
                           'PaperUnits','points',...
                           'PaperSize',[posFig(3), posFig(4)])   
         % create file 
-        if ~exist(sprintf('%s/%s.pdf',pathFigs,nameFigs), 'file')
-            % print(allHtoSave(i), ...
-            %     sprintf('%s/%s.ps',pathFigs,nameFigs), '-dpsc')
+        if ~exist(outputFiguresFilePath, 'file')
             exportgraphics(allHtoSave(i), ...
-                sprintf('%s/%s.pdf',pathFigs,nameFigs), ...
+                outputFiguresFilePath, ...
                 'Resolution',str2double(hObjs.h_edit_res.String))
         else
-            % print(allHtoSave(i), '-dpsc', '-append', ...
-            %     sprintf('%s/%s.ps',pathFigs,nameFigs))
+            % append
             exportgraphics(allHtoSave(i), ...
-                sprintf('%s/%s.pdf',pathFigs,nameFigs), ...
+                outputFiguresFilePath, ...
                 'Append',true, ...
                 'Resolution',str2double(hObjs.h_edit_res.String))
         end                                    
-    end   
+    end  
     close(allHtoSave)
 end
 
