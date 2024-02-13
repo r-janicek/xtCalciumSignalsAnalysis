@@ -163,12 +163,14 @@ tauD = p_tauD * imgData.pxSzT;
 % output
 params.amplitude = eventAmpl;
 params.TTP = TTP;
+params.TTP_line25_75 = TTP;
 params.FDHM = FDHM;
 params.FWHM = FWHM;
 params.sparkMass = sparkMass;
 params.tauD = tauD;
 params.bs = bs;
 params.t0 = t0;
+params.t0_line25_75 = t0;
 params.t_max = t(c_m);
 params.v_max = t_prof_s(c_m);
 

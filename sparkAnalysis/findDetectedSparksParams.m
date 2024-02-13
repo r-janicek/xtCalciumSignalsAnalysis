@@ -144,8 +144,11 @@ if ~isempty(statSparks)
                             imgData, normImgFlag);
                     end
                     % save parameters
+                    eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eP_2Dfit.amplitude;
                     eventParams.t0(i,1) = eP_2Dfit.t0 + eventROIstart_t;
+                    eventParams.t0_line25_75(i,1) = eP_2Dfit.t0_line25_75 + eventROIstart_t;
+                    eventParams.TTP_line25_75(i,1) = eP_2Dfit.TTP_line25_75;
                     eventParams.TTP(i,1) = eP_2Dfit.TTP;
                     eventParams.FDHM(i,1) = eP_2Dfit.FDHM;
                     eventParams.FWHM(i,1) = eP_2Dfit.FWHM;
@@ -167,8 +170,11 @@ if ~isempty(statSparks)
                         eventParams.AUC_2DFit(i,1) = nan;
                     end   
                 catch
+                    eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
+                    eventParams.t0_line25_75(i,1) = nan;
+                    eventParams.TTP_line25_75(i,1) = nan;
                     eventParams.TTP(i,1) = nan;
                     eventParams.FDHM(i,1) = nan;
                     eventParams.FWHM(i,1) = nan;
@@ -191,27 +197,18 @@ if ~isempty(statSparks)
                         % p0 = [t0 bs tauR v_max_t p_max_t*pxSzT 15 mean(t_spark_prof(end-5:end))];
                         % p0 = [v_max_t p_max_t*pxSzT p_max_t*pxSzT-t0 15 bs];
                         % initial parameters for time profile fit
-                        p0 = [t0 bs];
-                        out_t_prof = fitOneWholeEvent( ...
-                            p0, t, t_ups, t_event_prof, ...
-                            'yes', 'spline', tProf_m); 
+                        out_t_prof = fitOneWholeEvent(t, t_event_prof, ...
+                            "const_spline", t0=t0, bs=bs, ...
+                            x_ups=t_ups, mProf=tProf_m);
                         bs_t_prof = out_t_prof.bs;
                         t0_t_prof = out_t_prof.t0;
                         tauD = out_t_prof.tauD;
                         tauR = out_t_prof.tauR;
                         % fit gaussian or exp modified gaussian or spline
                         % to spatial profile
-                        % 'Gauss' : [F0,A,w,xc]
-                        % 'EMG' : [A,m,sd,tau,F0]
-                        x_event_prof_m = x_event_prof;
-                        x_event_prof_m(~xProf_m) = nan;
-                        [v_max_x, p_max_x] = max(x_event_prof_m);
-                        % estimation of the width in half max
-                        w = sum((x_event_prof_m-bs-(v_max_x-bs)/2)>=0)*pxSzX;
-                        % fit
-                        out_x_prof = fitOneWholeEvent(...
-                            [bs v_max_x-bs w p_max_x*pxSzX-pxSzX],...
-                            x, x_ups, x_event_prof, 'no', 'Gauss', xProf_m);
+                        out_x_prof = fitOneWholeEvent(x, x_event_prof, ...
+                            "Gauss", bs=bs, ...
+                            x_ups=x_ups, mProf=xProf_m);
                         % baseline of x profile
                         bs_x_prof = out_x_prof.bs;
                         % upscale mask
@@ -243,7 +240,6 @@ if ~isempty(statSparks)
                             imgData.blank, peakData_ups, tProf_m_ups, ...
                             normImgFlag);
                     catch
-                        keyboard
                         % get params from image of event
                         calcMethodPrev = 'peakXTProfiles'; 
                         calcMethod = 'estimate from event img';
@@ -261,8 +257,11 @@ if ~isempty(statSparks)
                         tauR = out_t_prof.tauR;
                     end
                     % save parameters
+                    eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eP_profs.amplitude;
                     eventParams.t0(i,1) = eP_profs.t0 + eventROIstart_t;
+                    eventParams.t0_line25_75(i,1) = eP_profs.t0_line25_75 + eventROIstart_t;
+                    eventParams.TTP_line25_75(i,1) = eP_profs.TTP_line25_75;
                     eventParams.TTP(i,1) = eP_profs.TTP;
                     eventParams.FDHM(i,1) = eP_profs.FDHM;
                     eventParams.FWHM(i,1) = eP_profs.FWHM;
@@ -272,8 +271,11 @@ if ~isempty(statSparks)
                     eventParams.AUC_2DFit(i,1) = nan;
                 catch
                     % if cannot get profiles for some reason
+                    eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
+                    eventParams.t0_line25_75(i,1) = nan;
+                    eventParams.TTP_line25_75(i,1) = nan;
                     eventParams.TTP(i,1) = nan;
                     eventParams.FDHM(i,1) = nan;
                     eventParams.FWHM(i,1) = nan;
@@ -317,8 +319,11 @@ if ~isempty(statSparks)
                         tauD = out_t_prof.tauD;
                         tauR = out_t_prof.tauR;
                     end
+                    eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eParamsEst.amplitude;
                     eventParams.t0(i,1) = eParamsEst.t0 + eventROIstart_t;
+                    eventParams.t0_line25_75(i,1) = eParamsEst.t0_line25_75 + eventROIstart_t;
+                    eventParams.TTP_line25_75(i,1) = eParamsEst.TTP_line25_75;
                     eventParams.TTP(i,1) = eParamsEst.TTP;
                     eventParams.FDHM(i,1) = eParamsEst.FDHM;
                     eventParams.FWHM(i,1) = eParamsEst.FWHM;
@@ -328,8 +333,11 @@ if ~isempty(statSparks)
                     eventParams.AUC_2DFit(i,1) = nan;
                 catch
                     % if cannot get estimate of params for some reason
+                    eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
+                    eventParams.t0_line25_75(i,1) = nan;
+                    eventParams.TTP_line25_75(i,1) = nan;
                     eventParams.TTP(i,1) = nan;
                     eventParams.FDHM(i,1) = nan;
                     eventParams.FWHM(i,1) = nan;

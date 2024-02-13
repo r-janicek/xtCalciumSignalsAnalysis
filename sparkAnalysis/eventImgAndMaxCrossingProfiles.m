@@ -88,19 +88,19 @@ if isempty(startOfEvent)
     r_m_whImg = rows_e(1)-1+r_m;
     % time axis of image
     t_whImg = (1:1:size(img,2)).*pxSzT - pxSzT;
-
+    
     % try to expand area around spark in t direction, fit the rising part
     % of spark, same as in spark recovery analysis
     t_spark_prof_whImg = mean( ...
         img(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
     t_spark_prof_whImg = t_spark_prof_whImg(:);
     
-    %fit only rise of spark fun(t0,tR,A,y0)
+    % fit only rise of spark fun(t0,tR,A,y0)
     locs = t_whImg(cols_e(1)-1+c_m);
     pks = t_spark_prof_whImg(cols_e(1)-1+c_m);
     t_whImg_evnt_m = false(size(t_whImg));
     t_whImg_evnt_m(cols_e) = true;
-   
+    
     if isempty(prevFitCoef)
         try
             [~,~,prevFitCoef,~,startOfEvent,endOfEvent] = ...
@@ -240,9 +240,11 @@ try
     
     % check if t0 is lower than position of maximum, also bs is smaller
     % than maximum value
-    if t0>t(p_max_t) || bs >= v_max_t
+    if t0>t(p_max_t)
         t0 = t(sEventEstGrad);
-        bs = t_event_prof(sEventEstGrad);   
+    end
+    if bs >= v_max_t
+        bs = t_event_prof(sEventEstGrad);
     end
   
 catch

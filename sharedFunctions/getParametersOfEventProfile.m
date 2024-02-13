@@ -96,26 +96,26 @@ if ~isempty(t_prof)
     if pos_25 == pos_75
         pos_25 = pos_25 - 1;
     end
+    try
+        f_line25_75 = fit(t(pos_25:pos_75),t_prof(pos_25:pos_75),'poly1');
+        % t_fit = t(find(t_prof>bs_t,1,'first'):pos_t);
+        % line25_75 = feval(f_line25_75,t_fit);
+        % t0_line25_75 = t_fit(find(line25_75<bs_t,1,'last'));
+        t0_line25_75 = (bs_t-f_line25_75.p2)/f_line25_75.p1;
+    catch
+        % find t0 (start of spark) as 1% amplitude increase over baseline 
+        t0_line25_75 = t( numel(t_prof) - ...
+            find(flipud(t_prof) < ((val_t-bs_t)/100 + bs_t), 1, 'first') + 1);
+    end
     if isempty(t0)
-        try
-            f_line25_75 = fit(t(pos_25:pos_75),t_prof(pos_25:pos_75),'poly1');
-            t_fit = t(find(t_prof>bs_t,1,'first'):pos_t);
-            line25_75 = feval(f_line25_75,t_fit);
-            t0 = t_fit(find(line25_75<bs_t,1,'last'));
-        catch
-            % find t0 (start of spark) as 5% of   increase of  set manually
-            % t0 = t( find(t_prof > ((val_t-bs_t)/50 + bs_t), 1, 'first'));
-            t0 = t( numel(t_prof) - ...
-                find(flipud(t_prof) < ((val_t-bs_t)/50 + bs_t), 1, 'first') + 1);
-        end
+        t0 = t0_line25_75; 
     end
     % get time to peak
     TTP = t(pos_t) - t0;
-    if TTP<0
-        TTP=0;
-    elseif isempty(TTP)
-        TTP=0;
-    end
+    TTP_line25_75 = t(pos_t) - t0_line25_75;
+    if (TTP<0) || isempty(TTP), TTP=0; end
+    if (TTP_line25_75<0) || isempty(TTP_line25_75), TTP_line25_75=0; end
+    
 else
     FDHM = nan;
     half_max_t = nan;
@@ -124,7 +124,9 @@ else
     pos_25 = nan;
     pos_75 = nan;
     t0 = nan;
+    t0_line25_75 = nan;
     TTP = nan;
+    TTP_line25_75 = nan;
 end
 
 
@@ -209,12 +211,14 @@ sparkMass = Ampl*1.206*FWHM^3;
 
 eventParams.amplitude = Ampl;
 eventParams.TTP = TTP;
+eventParams.TTP_line25_75 = TTP_line25_75;
 eventParams.FDHM = FDHM;
 eventParams.FWHM = FWHM;
 eventParams.sparkMass = sparkMass;
 eventParams.bs_t = bs_t;
 eventParams.bs_x = bs_x;
 eventParams.t0 = t0;
+eventParams.t0_line25_75 = t0_line25_75;
 eventParams.t_max = t(pos_t);
 eventParams.v_max = val_t;
 eventParams.half_max_t = half_max_t;

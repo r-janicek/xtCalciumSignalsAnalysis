@@ -1,6 +1,9 @@
 function out = fitOneWholeEvent(p0,x,x_ups,y,piecewise,model,param1,param2)
 
 % parameters of function
+
+almost all implemented 
+
 % p0 = coeficients
 % x = independent variable
 % x_ups = upscaled

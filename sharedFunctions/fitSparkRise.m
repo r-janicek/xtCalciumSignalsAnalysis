@@ -7,14 +7,25 @@ function [h_line, detectedEventsMask, coef, sp_fit, ...
 options = optimoptions('lsqnonlin', 'TolFun',tol, ...
     'TolX',tol, 'MaxIter',iter,...
     'MaxFunEvals',3*iter, 'Display','off');
-fun_e = @(x,t) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
-        (t<x(1)).*(x(4)));  
-fun = @(x,t,ys) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
-         (t<x(1)).*(x(4)))-ys;
+fitFun = 'expRise';
+switch fitFun
+    case 'expRise'
+        % parameters [t0 tauR A bs]
+        fun_e = @(x,t) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
+            (t<x(1)).*(x(4)));
+        fun = @(x,t,ys) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
+            (t<x(1)).*(x(4)))-ys;
+        n_coef = 4;
+    case 'sigmoid'
+        % parameters [bs A m tau] (baseline, amplitude, middle point, time constant)
+        fun_e = @(x,t)   x(1) + (x(2)-x(1))./(1+exp(-(t-x(3))./x(4)));
+        fun = @(x,t,ys) (x(1) + (x(2)-x(1))./(1+exp(-(t-x(3))./x(4))))-ys;
+        n_coef = 4;
+end
 
 % allocate
 h_line = zeros(length(pks),1);
-coef = zeros(length(pks),4); 
+coef = zeros(length(pks),n_coef); 
 sp_fit = {zeros(length(pks),1)};
 startOfSpark = zeros(length(pks),1); 
 endOfSpark = zeros(length(pks),1);
@@ -60,27 +71,27 @@ if ~isempty(pks)
             prof_s(isnan(prof_s)) = bsl;
             % treshold profile
             prof_s(prof_s < bsl) = bsl;
-            % get all posible peaks in profile of events
-            [v_s, l_s] = findpeaks(prof_s(m_event));
-            l_s = l_s + find(m_event, 1, 'first') - 1;
+            % get all posible peaks in smoothed profile of events
+            [valPeaks_s, locPeaks_s] = findpeaks(prof_s(m_event));
+            locPeaks_s = locPeaks_s + find(m_event, 1, 'first') - 1;
             % get the one closest to peak of event
-            [~, idx_p] = min(abs(l_s-locs_px));
+            [~, idx_p] = min(abs(locPeaks_s-locs_px));
             % change values of currently fitted event to peak value 
             % (to be sure I have correct estimate of baseline. 
             % It might happen that detected spark has multiple peaks, 
             % this will remove them and still keep nice trace to calculate gradient)
-            if numel(l_s) > 1
-                prof_s(m_event) = v_s(idx_p);
+            if numel(locPeaks_s) > 1
+                prof_s(m_event) = valPeaks_s(idx_p);
             end
             % calculate start and end of event using derivation
             % calculated on thresholded event profile
             % find start of event
-            prof_s_beforePeak = prof_s(1:l_s(idx_p));
+            prof_s_beforePeak = prof_s(1:locPeaks_s(idx_p));
             % flip profile to calulate gradient from left to right
             prof_s_beforePeak = flipud(prof_s_beforePeak(:));
             pos_s = max( [...
-                l_s(idx_p)-find(gradient(prof_s_beforePeak)>0, 1, 'first')+1, ...
-                l_s(idx_p)-maxDurOfBaseline ] );
+                locPeaks_s(idx_p)-find(gradient(prof_s_beforePeak)>0, 1, 'first')+1, ...
+                locPeaks_s(idx_p)-maxDurOfBaseline ] );
             if isempty(pos_s) || isnan(pos_s) || pos_s < 1
                 pos_s = find(m_eventWithBsl, 1, 'first');
                 if isempty(pos_s)
@@ -88,10 +99,10 @@ if ~isempty(pks)
                 end
             end
             % find end of event
-            prof_s_afterPeak = prof_s(l_s(idx_p):end);
+            prof_s_afterPeak = prof_s(locPeaks_s(idx_p):end);
             pos_e = min( [...
-                l_s(idx_p)+find(gradient(prof_s_afterPeak)>0, 1, 'first')-1, ...
-                l_s(idx_p)+2*maxDurOfBaseline] );
+                locPeaks_s(idx_p)+find(gradient(prof_s_afterPeak)>0, 1, 'first')-1, ...
+                locPeaks_s(idx_p)+2*maxDurOfBaseline] );
             if isempty(pos_e) || isnan(pos_e) || pos_e>numel(prof_t)
                 pos_e = find(m_eventWithBsl, 1, 'last');
             end
@@ -115,17 +126,15 @@ if ~isempty(pks)
         ys = ys(:);
 
         % get initial parameters to fit profile
-        % t0,tR,A,y0
-        if ~isempty(coefPrevFit)
+        if ~isempty(coefPrevFit) && size(coefPrevFit,2) == n_coef
             x0 = coefPrevFit(i,:);
         else
             % estimation of initial fit values
-            A = pks(i);
-            
-            t0FirstEst = locs(i)-10;
-            [~,t0FirstEstPx] = min( abs( t-t0FirstEst ) );
-            t0FirstEstPx = l_s(idx_p) - ...
-                find(~prof_t_evnts_m(1:l_s(idx_p)), 1, 'last');
+            A = pks(i); 
+            % t0FirstEst = locs(i)-10;
+            % [~,t0FirstEstPx] = min( abs( t-t0FirstEst ) );
+            t0FirstEstPx = find(~prof_t_evnts_m(1:locPeaks_s(idx_p)), 1, 'last') - ...
+                pos_s + 1;
             if t0FirstEstPx <= 0
                 t0FirstEstPx = 3; % first 3 points
             end
@@ -145,39 +154,66 @@ if ~isempty(pks)
                 v_75 = ys(p_75);
                 v_25 = ys(p_25);
                 % construct line two-point form and get x at y=y0
-                t0_ind_est = round( p_25 + ( (y0-v_25)*(p_75-p_25) ) / (v_75-v_25) );
+                t0_est = t(p_25)+( (y0-v_25)*(t(p_75)-t(p_25)) )/(v_75-v_25);
                 tR_est = t(p_75)-t(p_25);
                 if tR_est<mean(diff(t)), tR_est = 3; end
-                if t0_ind_est<1, t0_ind_est = 1; end
-                % t0, tR, A, y0
-                x0 = [t(t0_ind_est) tR_est A-y0 y0];
+                if t0_est<t(1), t0_est = t(1); end
             catch
-                % t0, tR, A, y0
-                x0 = [locs(i)-10 5 A y0];
+                t0_est = locs(i)-10;
+                tR_est = 3;
+            end
+            switch fitFun
+                case 'expRise'
+                    % parameters [t0, tR, A, y0]
+                    x0 = [t0_est tR_est A-y0 y0];
+                case 'sigmoid'
+                    % parameters [bs A m tau]
+                    x0 = [y0 A t0_est+(locs(i)-t0_est)/2 tR_est];
             end
         end
-
+        % parameters bounds
+        switch fitFun
+            case 'expRise'
+                % t0, tR, A, y0
+                lb = [min(t) 0 min(ys) min(ys)];
+                ub = [max(t) max(t)-min(t) max(ys)-min(ys) max(ys)];
+            case 'sigmoid'
+                % parameters [bs A m tau]
+                lb = [min(ys) min(ys) min(t) 10^(-9)];
+                ub = [max(ys) max(ys) max(t) inf];
+        end
+        % fit
         try
-            x = lsqnonlin(@(x)fun(x,t,ys), x0, ...
-                [min(t) 0 min(ys) min(ys)], ...
-                [max(t) max(t)-min(t) max(ys)-min(ys) max(ys)], ...
-                options);
+            x = lsqnonlin(@(x) fun(x,t,ys), x0, lb, ub, options);
         catch
             try
                 sumSqrs = @(x,t,ys) sum(fun(x,t,ys).^2);
-                x = fmincon(@(x)sumSqrs(x,t,ys),x0,[],[],[],[],...
-                    [min(t) 0 min(ys) min(ys)], ...
-                    [max(t) max(t)-min(t) max(ys)-min(ys) max(ys)]);
+                x = fmincon(@(x) sumSqrs(x,t,ys), x0, ...
+                    [], [], [], [], lb, ub);
             catch
                 x = x0;
             end
+        end
+        % estimate t0 if fit fun was sigmoidal
+        switch fitFun
+            case 'expRise'
+            case 'sigmoid'
+                % tangent line at middle point of sigmoid
+                fun_line = @(x,t) ((x(2)-x(1))/(4*x(4))).*t + ...
+                    (fun_e(x,x(3))-(((x(2)-x(1))/(4*x(4))).*x(3)));
+                t0 = -(fun_e(x,x(3))-(((x(2)-x(1))/(4*x(4))).*x(3))) / ...
+                    ((x(2)-x(1))/(4*x(4)));
         end
 
         % figure
         % plot(t,ys,'ok')
         % hold on
-        % plot(t,fun_e(x0,t),'ob')
-        % plot(t,fun_e(x,t),'or')
+        % plot(t,fun_e(x0,t),'b')
+        % plot(t,fun_e(x,t),'r')
+        % %t_ups = linspace(t(1),t(end),1000);
+        % %plot(t_ups,fun_e(x,t_ups),'c')
+        % 
+        % %plot(t(t>t0_est),fun_line(x,t(t>t0_est)),'m')
 
         coef(i,:) = x;
         sp_fit(i,1) = {[t,fun_e(x,t)]};

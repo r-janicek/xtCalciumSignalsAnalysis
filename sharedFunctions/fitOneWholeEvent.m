@@ -1,327 +1,411 @@
-function out = fitOneWholeEvent(...
-    p0, x, x_ups, y, piecewise, model, mProf)
+function out = fitOneWholeEvent(x, y, model, options)
+%{
+parameters of function
+x = independent variable
+y = data to fit 
+model:
+    1. 1expR1expD (single exponential rise and decay)
+    2. spline
+    3. const_spline (constant for x<t0 and spline for x>=t0)
+    4. EMG (exponentially modified gaussian)
+    5. CaSpike model
+    6. Gauss
+    7. doubleBoltzmann
+    8. Asym2Sigmoid
+options:
+    t0 = start of event
+    bs = baseline before event
+    x_ups = upscaled independent variable
+    mProf = mask of profile
+    splineOrder
+    spline_nK = number of knots
+    addMoreWeightToEvent
+%}
+arguments
+    x (:,1) {mustBeNumeric}            
+    y (:,1) {mustBeNumeric}             
+    model (1,1) {mustBeText, ...
+        mustBeMember(model,{'1expR1expD','spline','const_spline','EMG', ...
+        'CaSpike','Gauss','doubleBoltzmann','Asym2Sigmoid'})} 
+    options.t0 (1,1) {mustBeNumeric} = nan 
+    options.bs (1,1) {mustBeNumeric} = nan
+    options.x_ups (:,1) {mustBeNumeric} = linspace(x(1),x(end),numel(x)*10)
+    options.mProf (:,1) logical = true(size(x))
+    options.splineOrder (1,1) {mustBeInteger, mustBePositive} = 4
+    options.spline_nK (1,1) {mustBeNumeric, mustBeFinite} = 0
+    options.addMoreWeightToEvent (1,1) logical = false
+end
 
-% parameters of function
-% p0 = coeficients
-% x = independent variable
-% x_ups = upscaled
-% y = data to fit
-% piecewise = options yes or no
-% models:
-% 1. 1expR1expD (single exponential rise and decay)
-% 2. spline
-% 3. EMG (exponentially modified gaussian)
-% mProf = mask of profile 
-
-if isempty(mProf), mProf = ones(size(x)); end
-if isempty(x_ups), x_ups = x; end
-
-% data
-x = x(:);
-y = y(:);
 % start and end of event's mask
-sE = find(mProf,1,'first');
-eE = find(mProf,1,'last');
-
+sE = find(options.mProf,1,'first');
+eE = find(options.mProf,1,'last');
+% x and y of event
 x_E = x(sE:eE);
 % y_E = y(sE:eE);
 % x_E = x(sE:eE);
 y_E = y;
-y_E(~mProf) = -inf;
-
+y_E(~options.mProf) = -inf;
 % max of event profile
 [maxV, maxP] = max(y_E);
-
 % step in x
-dx = mean(diff(x));
-        
-% options for fmincon
-opt = optimoptions('fmincon', ...
+dx = mean(diff(x));        
+% options for lsqnonlin
+optLsNonLin = optimoptions('lsqnonlin', ...
     'TolFun',1e-9, 'TolX',1e-9, 'TolCon',1e-9,...
-    'MaxIter',1000, 'MaxFunEvals',3000);
-
-% do fitting
-switch piecewise
-    
-    case 'yes'
-        % fit rise of spark in time profile
-        optFit = optimoptions('lsqnonlin', ...
-            'TolFun',1e-9, 'TolX',1e-9,...
-            'MaxIter',1000, 'MaxFunEvals',3000, ...
-            'Display','off');
-        
-        funR = @(p,xR,yR) ((xR>=p(1)).*((1-exp(-(xR-p(1))./p(2))).*(p(3)) + p(4)) + ...
-            (xR<p(1)).*(p(4)))-yR;
-        
-        funR_eval = @(p,xR) (xR>=p(1)).*((1-exp(-(xR-p(1))./p(2))).*(p(3)) + p(4)) + ...
-             (xR<p(1)).*(p(4));
-               
-        funD = @(p,xD,yD) ( p(1).*exp(-(xD-p(2))/p(3)) + p(4) ) - yD; 
-        funD_eval = @(p,xD) ( p(1).*exp(-(xD-p(2))/p(3)) + p(4) ); 
-        
-        % rise part
-        xR = x(1:maxP);
-        yR = y(1:maxP);
-        % correct for start of mask of event, also x start form 0
-        if p0(1) > maxP*dx - dx - 3           
-            p0(1) = maxP*dx - dx - 3;
+    'MaxIter',1000, 'MaxFunEvals',3000, ...
+    'Display','off');
+% options for fitnlm
+optFitNonLin = statset('TolFun',1e-9, 'TolX',1e-9,...
+    'MaxIter',1000, 'MaxFunEvals',3000, ...
+    'Display','off');
+% first estimate t0, bs, tauR and tauD, used later to initialize fit
+% fit rise and decay of event in time profile
+% rise fun
+funR = @(p,xR,yR) ((xR>=p(1)).*((1-exp(-(xR-p(1))./p(2))).*(p(3)) + p(4)) + ...
+    (xR<p(1)).*(p(4)))-yR;
+funR_eval = @(p,xR) (xR>=p(1)).*((1-exp(-(xR-p(1))./p(2))).*(p(3)) + p(4)) + ...
+    (xR<p(1)).*(p(4));
+% decay fun
+funD = @(p,xD,yD) ( p(1).*exp(-(xD-p(2))/p(3)) + p(4) ) - yD;
+funD_eval = @(p,xD) ( p(1).*exp(-(xD-p(2))/p(3)) + p(4) );
+% rise part
+xR = x(1:maxP);
+yR = y(1:maxP);
+% check for initial fit values
+if isnan(options.t0) || ~isfinite(options.t0)
+    % estimation of t0 and bs
+    % baseline estimation
+    t0FirstEstPx = sE - 1;
+    if t0FirstEstPx <= 0
+        t0FirstEstPx = 1; % first point
+    end
+    y0 = mean(yR(1:t0FirstEstPx));
+    % amplitude est
+    A = maxV - y0;
+    try
+        % estimate t0
+        % find 25 and 75% from max of rise part
+        p_75 = numel(yR) - ...
+            find( (flipud(yR)-(y0 + (max(yR)-y0).*0.75))>0, 1, 'last') + 1;
+        p_25 = numel(yR) - ...
+            find( (flipud(yR)-(y0 + (max(yR)-y0).*0.25))<0, 1, 'first') + 1;
+        if p_75 == p_25
+            p_25 = p_75-1;
         end
-        if p0(1) < 0, p0(1) = x(1); end
-        % p0 estimate [t0 tauR A bs]
-        p0Rise = [p0(1) max((maxP-sE)*dx*0.66,dx) maxV p0(2)];  
-        % fit rise 
-        try
-            coeffRise = lsqnonlin(@(p)funR(p,xR,yR), p0Rise,...
-                [min(xR) 0 min(yR) min(yR)], ...
-                [max(xR) max(xR)-min(xR) max(yR)-min(yR) max(yR)], ...
-                optFit);
-            t0 = coeffRise(1);
-            bs = coeffRise(4);
-        catch
-            t0 = p0(1);
-            bs = p0(2);
-        end
-        bs_end = mean(y(eE:end)); 
-        % estimate tauR     
-        t0_p = floor((t0-x(1))/dx); % t0 in points, adjust for start of event
-        if t0_p<1, t0_p = 1; end
-        % check if tauR make sense
-        try
-            if coeffRise(2) > max(xR(t0_p:end))-min(xR(t0_p:end))
-                % recalculate tauR
-                [~,p_tauR] = min( abs( yR(t0_p:end) - (0.66*(maxV-bs)+bs) ) );
-                tauR_est = p_tauR*dx;
-            else
-                tauR_est = coeffRise(2);
-            end
-        catch
-            % recalculate tauR
-            [~,p_tauR] = min( abs( yR(t0_p:end) - (0.66*(maxV-bs)+bs) ) );
-            tauR_est = p_tauR*dx;
-        end 
-        % estimate tauD
-        xD = x(maxP:end);
-        yD = y(maxP:end);
-        [~,p_tauD] = min( abs( yD - (0.33*(maxV-bs_end)+bs_end) ) );   
-        tauD_est = p_tauD*dx; 
-        % fit decay
-        try
-            % [A, pos, tauD, bs]
-            p0Decay = [maxV xD(1) tauD_est bs_end];
-            coeffDecay = lsqnonlin(@(p)funD(p,xD,yD), p0Decay,...
-                [min(yD) min(xD) 0 min(yD)], ...
-                [max(yD)-min(yD) max(xD) max(xD)-min(xD) max(yD)], ...
-                optFit);
-            tauDFitExp = coeffDecay(3);
-        catch
-            tauDFitExp = tauD_est;
-        end
-
-        % estimate amplitude 
-        A_est = maxV/(1-exp(-((maxP+sE-1)*dx-dx-t0)/tauR_est));         
-        p0(1) = t0;
-        p0(2) = bs;
-                      
-        switch model           
-            case '1expR1expD'
-                % Lacampagne et al, 1999
-%                 coefficients: [t0, F01, tauR, A, t1, tauD, F02]
-%                 fitFun = @(p,x) (x<p(1)).*p(2) + ...
-%                                 (x>=p(1) & x<=p(5)).*( p(2)+(1-exp(-(x-p(1))./p(3))).*p(4) ) + ...
-%                                 (x>p(5)).*( p(4).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );     
-                p0(3) = tauR_est;
-                p0(4) = A_est;
-                p0(6) = tauDFitExp;           
-                fitFun = @(p,x) (x<p(1)).*p(2) + ...
-                                (x>=p(1) & x<p(5)).*( p(2)+(1-exp(-(x-p(1))./p(3))).* (p(4)-p(2))) + ...
-                                (x>=p(5)).*( (p(4)-p(7)).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );                  
-                                                                    
-            case 'spline'
-                % coefficients: [t0, F01, spline coefficients]
-                nK = ceil((max( x(x>p0(1)))-min( x(x>p0(1))))/5);
-                splOrd = 4; % spline order, poly3
-                spl0  = spap2(nK, splOrd, x(x>p0(1)), y(x>p0(1)));  % first guess of spline coefficients
-                % newknt for a possibly better knot distribution
-                try
-                    knots = newknt(spl0);
-                    spl0  = spap2(knots, splOrd, x(x>p0(1)), y(x>p0(1)));
-                catch
-                end
-                nK = numel(spl0.knots);
-                p0 = [p0(1), p0(2), spl0.coefs];
-                fitFun = @(p,x) (x <= p(1)) .*  p(2) + ...
-                    (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x);        
-        end       
-        % put more weights to event than to baseline
-        wE = zeros(size(y));
-        wE(mProf) = ( 1 + y(mProf)./max(y(mProf)) ).^2;  
-        % do fitting
-        % create function which will be optimize, return scalar
-        fitFunSum = @(p,x,y) sum( wE .* (y-fitFun(p,x)).^2 );
-        
-        switch  model
-            case 'spline'
-                coef = p0;
-                tauD = tauDFitExp;
-                tauR = tauR_est;
-                
-            case '1expR1expD'
-                try
-                    lb = zeros(size(p0));
-                    ub = inf(size(p0));
-                    % first fit with fixed t0, t1, baseline and tauR = these were estimated
-                    lb(1) = p0(1); ub(1) = p0(1);
-                    lb(2) = p0(2); ub(2) = p0(2);
-                    lb(3) = p0(3); ub(3) = p0(3);
-                    lb(5) = p0(5); ub(5) = p0(5);
-                    coef = fmincon(@(p)fitFunSum(p,x,y),p0,[],[],[],[],lb,ub,[],opt);
-                    % refit with no bound
-                    lb = zeros(size(p0));
-                    ub = inf(size(p0));
-                    coef = fmincon(@(p)fitFunSum(p,x,y),coef,[],[],[],[],lb,ub,[],opt);
-                    tauR = coef(3);
-                    tauD = coef(6);
-                    
-                catch
-                    % refit with spline
-                    % coefficients: [t0, F01, spline coefficients]
-                    nK = ceil((max( x(x>p0(1)))-min( x(x>p0(1))))/5);
-                    splOrd = 4; % spline order, poly3
-                    spl0  = spap2(nK, splOrd, x(x>p0(1)), y(x>p0(1)));  % first guess of spline coefficients
-                    % newknt for a possibly better knot distribution
-                    knots = newknt(spl0);
-                    spl0  = spap2(knots, splOrd, x(x>p0(1)), y(x>p0(1)));
-                    nK = numel(spl0.knots);
-                    p0 = [p0(1), p0(2), spl0.coefs];
-                    fitFun = @(p,x) (x <= p(1)) .*  p(2) + (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x); 
-                    coef = p0;
-                    tauD = tauDFitExp;
-                    tauR = tauR_est;
-                end   
-        end
-        % get fit 
-        yFit = fitFun(coef,x);
-        if ~isempty(x_ups)
-            yFit_ups = pchip(x,yFit,x_ups);
-        else
-            x_ups = [];
-            yFit_ups = [];
-        end
-        bs = coef(2);
-        t0 = coef(1);
-
-        % figure
-        % plot(x,y)
-        % hold on
-        % plot(x,fitFun(p0,x),'r')
-        % plot(x,fitFun(coef,x),'g')
-
-    case 'no' 
-        switch  model
-            case 'Gauss'
-                % fit with gaussian
-                % coefficients: [F0, A, w, xc]
-                % F0-baseline, A-amplitude, w-width of gaussian, xc-center
-                fitFun = @(p,x) p(1) + ...
-                    (p(2)./(p(3).*sqrt(pi/2))) .* exp( (-2.*(x-p(4)).^2)./(p(3).^2) );
-                
-                % add more weigth to data of the event
-                wE = ones(size(y));
-                wE(mProf) = ( 1 + y(mProf)./max(y(mProf)) ).^2;
-                
-                % do fitting
-                opt.Algorithm = "sqp";
-                % create function which will be optimize, return scalar
-                fitFunSum = @(p,x,y,wE) sum( wE .* (y-fitFun(p,x)).^2 );
-                %fitFunSum = @(p,x,y) sum( (y-fitFun(p,x)).^2 );
-                coef = fmincon(@(p)fitFunSum(p,x,y,wE),p0,...
-                    [],[],[],[],...
-                    [min(y) 0 dx min(x_E)],...
-                    [max(y_E) inf max(x_E)-min(x_E) max(x_E)],...
-                    [], opt);
-                if coef(3)<dx
-                    coef = p0;
-                end
-                % refit without weights
-                wE = ones(size(y));
-                coef = fmincon(@(p)fitFunSum(p,x,y,wE),coef,...
-                    [],[],[],[], ...
-                    [min(y) 0 dx min(x)],...
-                    [max(y) inf max(x)-min(x) max(x)], ...
-                    [],opt);
-                
-                bs = coef(1);
-                tauR = nan;
-                tauD = nan;
-                yFit = fitFun(coef,x);
-                if ~isempty(x_ups)
-                    yFit_ups = fitFun(coef,x_ups);
-                else
-                    x_ups = [];
-                    yFit_ups = [];
-                end
-% %     keyboard
-                % figure
-                % plot(x,y)
-                % hold on
-                % plot(x_ups,fitFun(coef,x_ups),'r')
-                
-            case 'EMG'
-                % fit with exponentially modified gaussian
-                % coefficients: [A,m,sd,tau,F0]
-                fitFun = @(p,x) p(1).*exp(p(2)/p(4) + p(3)^2/(2*p(4)^2) - x./p(4)) .* ...
-                    cdf('Normal',x,p(2)+(p(3)^2/p(4)),p(3)) + p(5);
-                
-                fitFunSum = @(p,x,y) sum( (y-fitFun(p,x)).^2 );
-                coef = fmincon(@(p)fitFunSum(p,x_E,y_E),p0,...
-                    [],[],[],[],zeros(size(p0)),ones(size(p0)).*inf,[],opt);
-                bs = coef(5);
-                tauR = nan;
-                tauD = coef(4);
-                yFit = fitFun(coef,x);
-                if ~isempty(x_ups)
-                    yFit_ups = fitFun(coef,x_ups);
-                else
-                    x_ups = [];
-                    yFit_ups = [];
-                end
-             
-            case 'spline'
-                % fit with spline
-                nK = ceil( (max(x)-min(x))/1 ); % fit every 1 um
-                splOrd = 3; % spline order, poly3
-                spl0  = spap2(nK, splOrd, x, y);  % first guess of spline coefficients
-                % newknt for a possibly better knot distribution
-                knots = newknt(spl0);
-                spl0  = spap2(knots, splOrd, x, y);
-                fitFun = @(p,x) fnval(spmak(spl0.knots,spl0.coefs),x);
-                coef = [];
-                model = 'spline';
-                
-                %                          figure
-                %                          plot(x,y)
-                %                          hold on
-                %                          plot(x_ups,fitFun(p0,x_ups),'r')
-                
-                yFit = fitFun(coef,x);
-                if ~isempty(x_ups)
-                    yFit_ups = fitFun(coef,x_ups);
-                else
-                    x_ups = [];
-                    yFit_ups = [];
-                end
-                
-                bs = nan;
-                tauD = nan;
-                tauR = nan;
-        end
-        t0 = nan;
-        coeffRise = [];
-        funR_eval = [];
-        funD_eval = [];
-        coeffDecay = [];
+        v_75 = yR(p_75);
+        v_25 = yR(p_25);
+        % construct line two-point form and get x at y=y0
+        t0_est = xR(p_25)+( (y0-v_25)*(xR(p_75)-xR(p_25)) )/(v_75-v_25);
+        tR_est = max((max(xR)-t0_est)*0.66, dx);
+        if t0_est<xR(1), t0_est = xR(1); end
+    catch
+        t0_est = xR(maxP)-10;
+        if t0_est<xR(1), t0_est = xR(1); end
+        tR_est = dx;
+    end
+else
+    % use the ones provided
+    t0_est = options.t0;
+    if t0_est < 0, t0_est = xR(1); end
+    if isnan(options.bs) || ~isfinite(options.bs)
+        y0 = mean(y(x<t0_est));
+    else
+        y0 = options.bs;
+    end
+    tR_est = max((max(xR)-t0_est)*0.66, dx);
+    A = maxV - y0;
+    % % correct for start of mask of event, also x start form 0
+    % if options.t0 > maxP*dx - dx - 3
+    %     p0(1) = maxP*dx - dx - 3;
+    % end
+end
+% fit rise part of event
+% p0 estimate [t0 tauR A bs]
+p0Rise = [t0_est tR_est A y0];
+try
+    coeffRise = lsqnonlin(@(p)funR(p,xR,yR), p0Rise,...
+        [min(xR) 0 0 min(yR)], ...
+        [max(xR) max(xR)-min(xR) max(yR)-min(yR) max(yR)], ...
+        optLsNonLin);
+    t0 = coeffRise(1);
+    bs = coeffRise(4);
+    tauR_est = coeffRise(2);
+    % check if tauR make sense
+    if tauR_est > max(xR)-(t0-dx)
+        tauR_est = (max(xR)-t0)*0.66;
+    end
+catch
+    t0 = t0_est;
+    bs = y0;
+    tauR_est = tR_est;
+end
+%%%%%%%%%% estimate tauD
+bs_end = mean(y(eE:end));
+xD = x(maxP:end);
+yD = y(maxP:end);
+[~,p_tauD] = min( abs( yD - (0.33*(maxV-bs_end)+bs_end) ) );
+tauD_est = p_tauD*dx;
+% fit decay part
+% [A, pos, tauD, bs]
+p0Decay = [maxV-bs_end xD(1) tauD_est bs_end];
+try
+    coeffDecay = lsqnonlin(@(p)funD(p,xD,yD), p0Decay,...
+        [0 min(xD) 0 min(yD)], ...
+        [max(yD)-min(yD) max(xD) max(xD)-min(xD) max(yD)], ...
+        optLsNonLin);
+    tauD_est = coeffDecay(3);
+catch
+end
+% estimate amplitude
+try
+    A_est = maxV/(1-exp(-((maxP+sE-1)*dx-dx-t0)/tauR_est));
+catch
+    A_est = maxV-bs;
 end
 
+% setup model, p0 and bounds
+switch model
+    case '1expR1expD'
+        % Lacampagne et al, 1999
+        % coefficients: [t0, F01, tauR, A, t1, tauD, F02]
+        p0 = [t0 bs tauR_est A_est x(maxP) tauD_est bs_end];
+        lb = [min(x) min(y) 0 0 min(x) 0 min(y)];
+        ub = [max(x) max(y) max(x)-min(x) max(y)-min(y) max(x) max(x)-min(x) max(y)];
+        fitFun = @(p,x) (x<p(1)).*p(2) + ...
+            (x>=p(1) & x<p(5)).*( p(2)+(1-exp(-(x-p(1))./p(3))).* (p(4)-p(2))) + ...
+            (x>=p(5)).*( (p(4)-p(7)).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );
+
+    case 'spline'
+        %setup number of knots for spline fitting
+        if options.spline_nK==0
+            % every 5 points
+            options.spline_nK = ...
+                ceil((max(x)-min(x))/(5*dx));
+        end
+        % coefficients: [spline coefficients]
+        % splOrd = 4; % spline order, poly3
+        spl0  = spap2(options.spline_nK, ...
+            options.splineOrder, x, y);  % first guess of spline coefficients
+        % newknt for a possibly better knot distribution
+        try
+            knots = newknt(spl0);
+            spl0  = spap2(knots, options.splineOrder, x, y);
+        catch
+        end
+        p0 = [spl0.coefs];
+        fitFun = @(p,x) fnval(spmak(spl0.knots, spl0.coefs),x);
+
+    case 'const_spline'
+        if options.spline_nK==0
+            % every 5 points
+            options.spline_nK = ...
+                ceil((max(x(x>t0))-min(x(x>t0)))/(5*dx));
+        end
+        % coefficients: [t0, F01, spline coefficients]
+        % splOrd = 4; % spline order, poly3
+        % first guess of spline coefficients
+        spl0  = spap2(options.spline_nK, ...
+            options.splineOrder, x(x>t0), y(x>t0));
+        % newknt for a possibly better knot distribution
+        try
+            knots = newknt(spl0);
+            spl0  = spap2(knots, ...
+                options.splineOrder, x(x>t0), y(x>t0));
+        catch
+        end
+        p0 = [t0, bs, spl0.coefs];
+        fitFun = @(p,x) (x <= p(1)) .*  p(2) + ...
+            (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x);
+
+    case 'EMG'
+        % fit with exponentially modified gaussian
+        % coefficients: [A m sd tau F0]
+        sd_est = (sum(y>(bs+A_est/2))*dx)/2;
+        A_est_EMG = (maxV-bs) / ...
+            (exp(x(maxP)/tauD_est+sd_est^2/(2*tauD_est^2)-x(maxP)/tauD_est)* ...
+            cdf('Normal',x(maxP),x(maxP)+(sd_est^2/tauD_est),sd_est));
+        p0 = [A_est_EMG x(maxP) sd_est tauD_est bs];
+        lb = [0 min(x) dx 0 min(y)];
+        ub = [inf max(x) max(x)-min(x) max(x)-min(x) max(y)];
+        fitFun = @(p,x) p(1).*exp(p(2)/p(4) + p(3)^2/(2*p(4)^2) - x./p(4)) .* ...
+            cdf('Normal',x,p(2)+(p(3)^2/p(4)),p(3)) + p(5);
+
+    case 'CaSpike'
+        % coefficients: [t0, F0, FM, tA, tI, FI]
+        % coeff_n = {'t0','F01','Ampl','tauR','tauD','FI'};
+        p0 = [t0 bs A_est tauR_est tauD_est 1];
+        lb = [min(x) min(y) min(y) 0 0 0];
+        ub = [max(x) max(y) max(y) max(x)-min(x) max(x)-min(x) 1];
+        fitFun = @(p,x) (x < p(1)) .* p(2) + ...
+            (x >= p(1)) .* (p(2) + (p(3)*((-3*p(4)*(2 + (-1 + p(6))*p(4))*(4*p(4) - 7*p(5))*(p(4) - 3*p(5)))./(2*exp((2*(x-p(1)))/p(4)))+...
+            (3*p(4)*(p(4) - 3*p(5))*(p(4) - 2*p(5)))./exp((x-p(1))/p(4)) +(3*p(4)*(5 + (-1 + p(6))*p(4))*(2*p(4) - 5*p(5))*(p(4) - p(5)))./(5*exp((5*(x-p(1)))/p(4)))-...
+            (p(4)*(6 + (-1 + p(6))*p(4))*(p(4) - 2*p(5))*(p(4) - p(5)))./(6*exp((6.*(x-p(1)))/p(4))) -(6*p(5)^3*(1 + (-1 + p(6))*p(5)))./exp((x-p(1))/p(5))+...
+            (18*p(5)^3*(p(4) + p(5) + (-1 + p(6))*p(4)*p(5)))./(exp((p(4)^(-1) + p(5)^(-1)).*(x-p(1)))*(p(4) + p(5))) -...
+            (18*p(5)^3*(p(4) + (2 + (-1 + p(6))*p(4))*p(5)))./(exp((2/p(4) + p(5)^(-1)).*(x-p(1)))*(p(4) + 2*p(5)))+...
+            (6*p(5)^3*(p(4) + (3 + (-1 + p(6))*p(4))*p(5)))./(exp((3/p(4) + p(5)^(-1)).*(x-p(1)))* (p(4) + 3*p(5))) -...
+            (3*p(4)*(4 + (-1 + p(6))*p(4))*(5*p(4)^2 - 20*p(4)*p(5) +17*p(5)^2))./(4.*exp((4.*(x-p(1)))/p(4))) +...
+            (p(4)*(p(4)^2*(57 + 10*(-1 + p(6))*p(4)) - 3*p(4)*(84 + 13*(-1 + p(6))*p(4))*p(5) + (249 + 29*(-1 + p(6))*p(4))*p(5)^2))./(3.*exp((3.*(x-p(1)))/p(4)))-...
+            ((-1 + p(6))*(p(4) - 3*p(5))*(p(4) - 2*p(5))*(p(4) - p(5))*(37*p(4)^4 + 252*p(4)^3*p(5) + 605*p(4)^2*p(5)^2 + 660*p(4)*p(5)^3 + 360*p(5)^4))./...
+            (60*(p(4) + p(5))*(p(4) + 2*p(5))*(p(4) + 3*p(5))) +  (6*(-1 + p(6))*p(4)^2*(p(4) - 3*p(5))*(p(4) - 2*p(5)).*...
+            cosh((x-p(1))/p(4)))./exp((2.*(x-p(1)))/p(4))))/...
+            ((p(4) - 3*p(5))*(p(4) - 2*p(5))*(p(4) - p(5))));
+
+    case 'Gauss'
+        % fit with gaussian
+        % coefficients: [F0, A, w, xc]
+        % F0-baseline, A-amplitude, w-width of gaussian, xc-center
+        A_est_gauss = (maxV-bs)*(sum(y>(bs+A_est/2))*dx)*sqrt(pi/(4*log(2)));
+        p0 = [bs A_est_gauss sum(y>(bs+A_est/2))*dx x(maxP)];
+        lb = [min(y) 0 dx min(x)];
+        ub = [max(y) inf max(x)-min(x) max(x)];
+        fitFun = @(p,x) p(1) + ...
+            (p(2).*exp((-4.*log(2).*(x-p(4)).^2)./(p(3).^2))) ./ ...
+            (p(3).*sqrt(pi/(4*log(2))));
+
+    case 'doubleBoltzmann'
+        % fit with double boltzmann function
+        % coefficients: [F0, A, xH1, k1, xH2, k2]
+        p0 = [bs A_est t0+tauR_est -tauR_est x(maxP)+tauD_est tauD_est];
+        lb = [min(y) 0 min(x) -(max(x)-min(x)) min(x) 0 ];
+        ub = [max(y) inf max(x) 0 max(x) max(x)-min(x)];
+        fitFun = @(p,x) p(1) + p(2) .* ...
+            ( 1./(1+exp((x-p(3))./p(4))) ) .* ...
+            ( 1./(1+exp((x-p(5))./p(6))) ) ;
+
+    case 'Asym2Sigmoid'
+        % originLab
+        % coefficients:[F0, A, xc, w1, w2, w3]
+        % Meanings: y0 = offset, xc = center, A = amplitude,
+        % w1 = full width of half maximum,
+        % w2 = variance of low-energy side,
+        % w3 = variance of high-energy side.
+        % Lower Bounds: w1 > 0.0, w2 > 0.0, w3 > 0.0
+        p0 = [bs A_est x(maxP) sum(y>(bs+A_est/2))*dx tauR_est tauD_est];
+        lb = [min(y) 0 min(x) 0 0 0];
+        ub = [max(y) inf max(x) max(x)-min(x) max(x)-min(x) max(x)-min(x)];
+        fitFun = @(p,x) p(1) + p(2) .* ...
+            ( 1./(1+exp(-(x-p(3)+p(4)/2)./p(5))) ) .* ...
+            ( 1 - 1./(1+exp(-(x-p(3)-p(4)/2)./p(6))) ) ;
+end
+
+% observation weights
+wE = ones(size(y));
+if options.addMoreWeightToEvent
+    % put more weights to event than to baseline
+    wE(options.mProf) = (1 + y(options.mProf)./max(y(options.mProf))).^2;
+end
+fitFunDiff = @(p,x,y) wE.*(y-fitFun(p,x));
+% fit whole event
+switch  model
+    case 'spline'
+        coef = p0;
+        tauD = tauD_est;
+        tauR = tauR_est;
+    case 'const_spline'
+        coef = p0;
+        tauD = tauD_est;
+        tauR = tauR_est;
+        bs = coef(2);
+        t0 = coef(1);
+    otherwise
+        try
+            % fit profile with model
+            try
+                % no parameters constraints
+                mdl = fitnlm(x, y, fitFun, p0, ...
+                    'Weights',wE, 'Options',optFitNonLin);
+                % check if fit is better than constant 
+                assert(mdl.ModelFitVsNullModel.Pvalue<0.05)
+                coef = mdl.Coefficients.Estimate;
+            catch
+                coef = lsqnonlin(@(p)fitFunDiff(p,x,y), ...
+                    p0, lb, ub, optLsNonLin);
+            end
+            % check if there are no Nan or inf once function is evaluated
+            assert(all(isfinite(fitFun(coef,x))))
+            % assign t0 and baseline parameters form fits with
+            % different models
+            switch model
+                case '1expR1expD'
+                    % [t0, F01, tauR, A, t1, tauD, F02]
+                    bs = coef(2);
+                    t0 = coef(1);
+                    tauR = coef(3);
+                    tauD = coef(6);
+                case 'EMG'
+                    % [A m sd tau F0]
+                    bs = coef(5);
+                    tauR = tauR_est;
+                    tauD = coef(4);
+                case 'CaSpike'
+                    % [t0, F0, FM, tA, tI, FI]
+                    bs = coef(2);
+                    t0 = coef(1);
+                    tauR = coef(4);
+                    tauD = coef(5);
+                case 'Gauss'
+                    % [F0, A, w, xc]
+                    bs = coef(1);
+                    tauR = tauR_est;
+                    tauD = tauD_est;
+                case 'doubleBoltzmann'
+                    % [F0, A, xH1, k1, xH2, k2]
+                    bs = coef(1);
+                    tauR = tauR_est;
+                    tauD = tauD_est;
+                case 'Asym2Sigmoid'
+                    % [F0, A, xc, w1, w2, w3]
+                    bs = coef(1);
+                    tauR = tauR_est;
+                    tauD = tauD_est;
+            end
+        catch
+            % if fails fit with spline
+            model = 'spline';
+            %setup number of knots for spline fitting
+            if options.spline_nK==0
+                % every 5 points
+                options.spline_nK = ...
+                    ceil((max(x)-min(x))/(5*dx));
+            end
+            % coefficients: [spline coefficients]
+            % splOrd = 4; % spline order, poly3
+            spl0  = spap2(options.spline_nK, ...
+                options.splineOrder, x, y);  % first guess of spline coefficients
+            % newknt for a possibly better knot distribution
+            try
+                knots = newknt(spl0);
+                spl0  = spap2(knots, options.splineOrder, x, y);
+            catch
+            end
+            p0 = [spl0.coefs];
+            fitFun = @(p,x) fnval(spmak(spl0.knots, spl0.coefs),x);
+            coef = p0;
+            tauD = tauD_est;
+            tauR = tauR_est;
+        end
+end
+
+% get fit
+yFit = fitFun(coef,x);
+try
+    switch model
+        case {'1expR1expD', 'const_spline'}
+            yFit_ups = pchip(x, yFit, options.x_ups);
+        otherwise
+            yFit_ups = fitFun(coef,options.x_ups);
+    end
+catch
+    options.x_ups = [];
+    yFit_ups = [];
+end
+% figure('Name',sprintf("%s",model))
+% plot(x,y,'ok')
+% hold on
+% plot(options.x_ups,yFit_ups,'r')
+% plot(x,fitFun(p0,x),'g')
+% plot(x,fitFun(coef,x),'b')
+                  
 % create output structure
 out = struct('fitModel',model,...
     'coeff',coef,...
@@ -334,7 +418,7 @@ out = struct('fitModel',model,...
     'evntMaxV',maxV, ...
     'evntMaxPosPx',maxP, ...
     'yFit',yFit(:),...
-    'x_ups',x_ups(:),...
+    'x_ups',options.x_ups(:),...
     'yFit_ups',yFit_ups(:), ...
     'yFitFunR',funR_eval, ...
     'coeffRise',coeffRise,...

@@ -60,7 +60,7 @@ imgSzT = imgSzPx(2)*pxSzT;        % ms
 dataSparks = struct2table(sparkDetection.eventParams);
 dataSparks.maskOfAcceptedSparks = sparkDetection.maskOfAcceptedSparks(:);
 dataSparks.Properties.VariableUnits = ...
-    {'deltaF/F0' 'ms' 'ms' 'ms' 'um' ...
+    {'' 'deltaF/F0' 'ms' 'ms' 'ms' 'ms' 'ms' 'um' ...
      'deltaF/F0*um^3' 'ms' 'ms' 'deltaF/F0*ms' ...
      '' '' '' '' '' ''};
 
@@ -164,7 +164,7 @@ cellArrToWrite = [cellArr_info1, cell(maxArrHeight,1), ...
                   cellArr_info2, cell(maxArrHeight,1), ...
                   resultSparksParams];
 % save data
-writecell(cellArrToWrite, path_xls, 'Sheet', 'info');
+writecell(cellArrToWrite, path_xls, 'Sheet','info');
 
 %% create final whole image figures 
 scRes = get(0,'ScreenSize');
@@ -260,7 +260,8 @@ for i = 1:numel(sparkDetection.detectedEventsRec)
 end
 
 %invisible axes for text 
-text_ax = axes('Parent',whImg_fig_final,'Units','normalized','Position',[0.03 0.1 0.94 0.2]);
+text_ax = axes('Parent',whImg_fig_final, 'Units','normalized', ...
+    'Position',[0.03 0.1 0.94 0.2]);
 set(text_ax,'Visible','off')
 
 % create text input
@@ -271,10 +272,10 @@ ImgDataPath = fullfile(imgData.filePath,imgData.fileName);
 ImgDataPath = strrep(ImgDataPath, '_', '\_');
 
 % add average spark params
-dataAvrg = num2cell(mean(dataSparks{dataSparks.maskOfAcceptedSparks,(1:6)},1));
+dataAvrg = num2cell(mean(dataSparks{dataSparks.maskOfAcceptedSparks,[2,(6:11)]},1));
 if ~isempty(dataAvrg)
     avrgValuesOfSparks = strjoin( cellfun( @(x,y) sprintf('%s = %0.2f // ',x,y), ...
-        resultSparksParamsNames(1:6), dataAvrg,'UniformOutput',0 ) );
+        resultSparksParamsNames([2,(6:11)]), dataAvrg,'UniformOutput',0 ) );
     % add greek letters
     avrgValuesOfSparks = strrep(avrgValuesOfSparks, 'deltaF/F0', '\Delta/F_0');
     avrgValuesOfSparks = strrep(avrgValuesOfSparks, 'um', '\mum');
