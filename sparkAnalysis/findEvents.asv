@@ -60,8 +60,8 @@ if any(bwImg(:)~=0)
         % parameters of watershed detection/ also filtering, 
         % wSp in um and dSp in ms
         % filter size is increasing from min values (defined by user) with decreasing sensitivity  
-        wSp = max(str2double(hObjs.h_edit_MinWidthSpark.String), 2);
-        dSp = max(str2double(hObjs.h_edit_MinDurSpark.String), 20);
+        wSp = min(str2double(hObjs.h_edit_MinWidthSpark.String),);
+        dSp = str2double(hObjs.h_edit_MinDurSpark.String);
         if wSp < pxSzX, wSp = pxSzX; end
         if dSp < pxSzT, dSp = pxSzT; end
         % H = fspecial('disk',min(ceil(wSp/pxSzX),ceil(dSp/pxSzT)));
@@ -75,6 +75,10 @@ if any(bwImg(:)~=0)
         imgEventsWT(~bwImg)=0;
         % normalize to [0,1]
         imgEventsWT = imgEventsWT ./ max(imgEventsWT(:));
+       
+figure
+imagesc(imgEventsWT)
+
         % levels from 1 to 50
         imgRange = prctile(imgEventsWT(imgEventsWT~=0), [1 99]);
         noiseEst = std(imgEventsWT(imgEventsWT~=0));

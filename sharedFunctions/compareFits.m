@@ -24,7 +24,6 @@ if nestedModels
         ( altModel.ss/altModel.df );
     % get p value
     out.p_Ftest = fcdf(F, nullModel.df-altModel.df, altModel.df, "upper");
-    
 else
     % calculate Akaike's Information Criterion, corrected for low number of
     % observations (N=number of observations, K=number of parameters + 1,

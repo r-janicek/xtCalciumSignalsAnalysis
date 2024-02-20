@@ -6,7 +6,7 @@ y = data to fit
 model:
     1. 1expR1expD (single exponential rise and decay)
     2. spline
-    3. constThenSpline (constant for x<t0 and spline for x>=t0)
+    3. const_spline (constant for x<t0 and spline for x>=t0)
     4. EMG (exponentially modified gaussian)
     5. CaSpike model
     6. Gauss
@@ -25,9 +25,8 @@ arguments
     x (:,1) {mustBeNumeric}            
     y (:,1) {mustBeNumeric}             
     model (1,1) {mustBeText, ...
-        mustBeMember(model,{'1expR1expD','spline', ...
-        'constThenSpline','EMG','CaSpike', ...
-        'Gauss','doubleBoltzmann','Asym2Sigmoid'})} 
+        mustBeMember(model,{'1expR1expD','spline','const_spline','EMG', ...
+        'CaSpike','Gauss','doubleBoltzmann','Asym2Sigmoid'})} 
     options.t0 (1,1) {mustBeNumeric} = nan 
     options.bs (1,1) {mustBeNumeric} = nan
     options.x_ups (:,1) {mustBeNumeric} = linspace(x(1),x(end),numel(x)*10)
@@ -180,7 +179,8 @@ switch model
         %setup number of knots for spline fitting
         if options.spline_nK==0
             % every 5 points
-            options.spline_nK = ceil(numel(x)/5);
+            options.spline_nK = ...
+                ceil((max(x)-min(x))/(5*dx));
         end
         % coefficients: [spline coefficients]
         % splOrd = 4; % spline order, poly3
@@ -195,10 +195,11 @@ switch model
         p0 = [spl0.coefs];
         fitFun = @(p,x) fnval(spmak(spl0.knots, spl0.coefs),x);
 
-    case 'constThenSpline'
+    case 'const_spline'
         if options.spline_nK==0
-            % every 10 ms
-            options.spline_nK = ceil((max(x(x>t0))-min(x(x>t0)))/5);
+            % every 5 points
+            options.spline_nK = ...
+                ceil((max(x(x>t0))-min(x(x>t0)))/(10/dx));
         end
         % coefficients: [t0, F01, spline coefficients]
         % splOrd = 4; % spline order, poly3
@@ -215,6 +216,8 @@ switch model
         p0 = [t0, bs, spl0.coefs];
         fitFun = @(p,x) (x <= p(1)) .*  p(2) + ...
             (x > p(1)) .* fnval(spmak(spl0.knots,p(3:end)),x);
+        
+
 
     case 'EMG'
         % fit with exponentially modified gaussian
@@ -300,7 +303,7 @@ switch  model
         coef = p0;
         tauD = tauD_est;
         tauR = tauR_est;
-    case 'constThenSpline'
+    case 'const_spline'
         coef = p0;
         tauD = tauD_est;
         tauR = tauR_est;
@@ -389,7 +392,7 @@ end
 yFit = fitFun(coef,x);
 try
     switch model
-        case {'1expR1expD', 'constThenSpline'}
+        case {'1expR1expD', 'const_spline'}
             yFit_ups = pchip(x, yFit, options.x_ups);
         otherwise
             yFit_ups = fitFun(coef,options.x_ups);

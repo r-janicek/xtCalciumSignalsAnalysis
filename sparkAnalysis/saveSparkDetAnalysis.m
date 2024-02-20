@@ -97,7 +97,10 @@ animal = [{'animal:'},animal];
 
 % filters used on image
 imgFiltersUsed = imgData.imgFiltersUsed;
-imgFiltersUsed = [{'filters applied to image:'};{imgFiltersUsed}];
+if ~iscell(imgFiltersUsed)
+    imgFiltersUsed = {imgFiltersUsed};
+end
+imgFiltersUsed = [{'filters applied to image:'};imgFiltersUsed];
 
 imgPath = {'imgPath:',filePath};
 imgName = [{'imgName:'},fileName];
@@ -163,6 +166,7 @@ resultSparksParams = [resultSparksParams; ...
 cellArrToWrite = [cellArr_info1, cell(maxArrHeight,1), ...
                   cellArr_info2, cell(maxArrHeight,1), ...
                   resultSparksParams];
+
 % save data
 writecell(cellArrToWrite, path_xls, 'Sheet','info');
 

@@ -152,6 +152,9 @@ sparkMass = eventAmpl*1.206*FWHM^3;
 
 % estimate tauD
 profD = t_prof_s(c_m+1:end);
+if isempty(profD)
+    profD = t_prof_s(end);
+end
 try
     bs_end = mean(profD(end-2:end)); % last 3 points
 catch

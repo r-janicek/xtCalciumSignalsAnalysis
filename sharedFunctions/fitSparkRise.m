@@ -1,6 +1,6 @@
 function [h_line, detectedEventsMask, coef, sp_fit, ...
     startOfSpark, endOfSpark] = fitSparkRise(pxSz_t, x_t, prof_t, ...
-    pks, locs, ax_prof, coefPrevFit, tol, iter,...
+    peaks_vals, peaks_locs, ax_prof, coefPrevFit, tol, iter,...
     smooth_span, bs_crit, sSpPrev, eSpPrev, prof_t_evnts_m)
 
 % locs in time units
@@ -24,103 +24,43 @@ switch fitFun
 end
 
 % allocate
-h_line = zeros(length(pks),1);
-coef = zeros(length(pks),n_coef); 
-sp_fit = {zeros(length(pks),1)};
-startOfSpark = zeros(length(pks),1); 
-endOfSpark = zeros(length(pks),1);
+h_line = zeros(length(peaks_vals),1);
+coef = zeros(length(peaks_vals),n_coef); 
+sp_fit = {zeros(length(peaks_vals),1)};
+startOfSpark = zeros(length(peaks_vals),1); 
+endOfSpark = zeros(length(peaks_vals),1);
 detectedEventsMask = false(numel(prof_t),1);
 
-maxDurOfBaseline = round(100/pxSz_t); % maximum duration of baseline in points
+maxDurOfBaseline = ceil(50/pxSz_t); % maximum duration of baseline in points
 
 % use previous starts and ends of sparks if any, otherwise find them
-if ~isempty(pks)
+if ~isempty(peaks_vals)
     % analyze and fit all peaks of events
-    for i = 1:numel(locs)
+    for i = 1:numel(peaks_locs)
         % get position of peak of events in pixels
-        [~,locs_px] = min(abs(x_t-locs(i)));
+        [~,peak_loc_px] = min(abs(x_t-peaks_locs(i)));
         if isempty(sSpPrev) && isempty(eSpPrev)
-            % mask of fitted event
-            m_event = false(size(prof_t));
-            m_event(find(~prof_t_evnts_m(1:locs_px),1,'last'): ...
-                locs_px+find(~prof_t_evnts_m(locs_px:end),1,'first')-1) = true;
-            % take event peak position and its surrounding
-            % (maxDurOfBaseline, 2*maxDurOfBaseline)
-            m_eventWithBsl = false(size(prof_t));
-            m_eventWithBsl( ...
-                max(1, locs_px - maxDurOfBaseline) : ...
-                min(numel(prof_t), locs_px + 2*maxDurOfBaseline)) = true;
-            % smooth profile for further analysis,
-            % loess with defined duration in ms
-            %prof_s = smooth(prof_t,3);
-            n_pts = round(smooth_span/pxSz_t);
-            % remove baseline, only events bigger than specified percentile stay
-            prof_s = nan(size(prof_t));
-            prof_s(m_eventWithBsl) = smooth(prof_t(m_eventWithBsl), ...
-                n_pts/numel(prof_t(m_eventWithBsl)), 'loess');
-            bs_crit = round(bs_crit);
-            % calculate from event
-            percentl = prctile(prof_s(m_eventWithBsl & prof_s>0), ...
-                [25 50 bs_crit]);
-            if max(percentl) > max(prof_s(prof_t_evnts_m))
-                percentl = prctile(prof_s(prof_t_evnts_m), ...
-                    [25 50 bs_crit]);
-            end
-            %iqr = percentl(3)- percentl(1);
-            bsl = percentl(3);
-            prof_s(isnan(prof_s)) = bsl;
-            % treshold profile
-            prof_s(prof_s < bsl) = bsl;
-            % get all posible peaks in smoothed profile of events
-            [valPeaks_s, locPeaks_s] = findpeaks(prof_s(m_event));
-            locPeaks_s = locPeaks_s + find(m_event, 1, 'first') - 1;
-            % get the one closest to peak of event
-            [~, idx_p] = min(abs(locPeaks_s-locs_px));
-            % change values of currently fitted event to peak value 
-            % (to be sure I have correct estimate of baseline. 
-            % It might happen that detected spark has multiple peaks, 
-            % this will remove them and still keep nice trace to calculate gradient)
-            if numel(locPeaks_s) > 1
-                prof_s(m_event) = valPeaks_s(idx_p);
-            end
-            % calculate start and end of event using derivation
-            % calculated on thresholded event profile
-            % find start of event
-            prof_s_beforePeak = prof_s(1:locPeaks_s(idx_p));
-            % flip profile to calulate gradient from left to right
-            prof_s_beforePeak = flipud(prof_s_beforePeak(:));
-            pos_s = max( [...
-                locPeaks_s(idx_p)-find(gradient(prof_s_beforePeak)>0, 1, 'first')+1, ...
-                locPeaks_s(idx_p)-maxDurOfBaseline ] );
-            if isempty(pos_s) || isnan(pos_s) || pos_s < 1
-                pos_s = find(m_eventWithBsl, 1, 'first');
-                if isempty(pos_s)
-                    pos_s = 1;
-                end
-            end
-            % find end of event
-            prof_s_afterPeak = prof_s(locPeaks_s(idx_p):end);
-            pos_e = min( [...
-                locPeaks_s(idx_p)+find(gradient(prof_s_afterPeak)>0, 1, 'first')-1, ...
-                locPeaks_s(idx_p)+2*maxDurOfBaseline] );
-            if isempty(pos_e) || isnan(pos_e) || pos_e>numel(prof_t)
-                pos_e = find(m_eventWithBsl, 1, 'last');
-            end
-            if pos_e<=pos_s, pos_e = pos_s+1; end
-
+            % find new start and end of event with baseline
+            [pos_s, pos_e] = estimateStartAndEndOfEvent( ...
+                prof_t, peak_loc_px, ...
+                maxDurOfBaseline=maxDurOfBaseline, ...
+                evntsMask=prof_t_evnts_m, ...
+                equalBaselineDur=false, ...
+                smoothSpan=round(smooth_span/pxSz_t), ...
+                evntAcceptCrit=bs_crit);
         else
-            % take old
+            % take provided ones
             pos_s = sSpPrev(i);
             pos_e = eSpPrev(i);
         end
         
         % get rise part of profile of event 
-        ys = prof_t(pos_s:locs_px);
-        t = x_t(pos_s:locs_px);
+        ys = prof_t(pos_s:peak_loc_px);
+        t = x_t(pos_s:peak_loc_px);
         % check if there is enough points to fit the profile with model
         if length(ys)<size(coef,2)
-            ys = prof_t(pos_s:locs_px + (size(coef,2)-length(ys)));
-            t = x_t(pos_s:locs_px + (size(coef,2)-length(t)));
+            ys = prof_t(pos_s:peak_loc_px + (size(coef,2)-length(ys)));
+            t = x_t(pos_s:peak_loc_px + (size(coef,2)-length(t)));
         end
         t = t(:);
         ys = ys(:);
@@ -130,10 +70,10 @@ if ~isempty(pks)
             x0 = coefPrevFit(i,:);
         else
             % estimation of initial fit values
-            A = pks(i); 
+            A = peaks_vals(i); 
             % t0FirstEst = locs(i)-10;
             % [~,t0FirstEstPx] = min( abs( t-t0FirstEst ) );
-            t0FirstEstPx = find(~prof_t_evnts_m(1:locPeaks_s(idx_p)), 1, 'last') - ...
+            t0FirstEstPx = find(~prof_t_evnts_m(1:peak_loc_px), 1, 'last') - ...
                 pos_s + 1;
             if t0FirstEstPx <= 0
                 t0FirstEstPx = 3; % first 3 points
@@ -159,7 +99,7 @@ if ~isempty(pks)
                 if tR_est<mean(diff(t)), tR_est = 3; end
                 if t0_est<t(1), t0_est = t(1); end
             catch
-                t0_est = locs(i)-10;
+                t0_est = peaks_locs(i)-10;
                 tR_est = 3;
             end
             switch fitFun
@@ -168,7 +108,7 @@ if ~isempty(pks)
                     x0 = [t0_est tR_est A-y0 y0];
                 case 'sigmoid'
                     % parameters [bs A m tau]
-                    x0 = [y0 A t0_est+(locs(i)-t0_est)/2 tR_est];
+                    x0 = [y0 A t0_est+(peaks_locs(i)-t0_est)/2 tR_est];
             end
         end
         % parameters bounds

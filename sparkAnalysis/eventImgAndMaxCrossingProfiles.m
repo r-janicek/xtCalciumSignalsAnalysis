@@ -21,7 +21,7 @@ imgMask(rows_e,cols_e) = statEvent.Image;
 
 % try to update WeightedCentroid position
 % there should be only one event of interenst in imgE mask
-% do treshold 50th percentile, create mask and do AND operation with
+% do treshold 90th percentile, create mask and do AND operation with
 % previous event mask
 %imgE_s = imgaussfilt(imgE, 1);
 imgE_trsh_m = imgE >= prctile(imgE(statEvent.Image), 90);
@@ -94,13 +94,11 @@ if isempty(startOfEvent)
     t_spark_prof_whImg = mean( ...
         img(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
     t_spark_prof_whImg = t_spark_prof_whImg(:);
-    
     % fit only rise of spark fun(t0,tR,A,y0)
     locs = t_whImg(cols_e(1)-1+c_m);
     pks = t_spark_prof_whImg(cols_e(1)-1+c_m);
     t_whImg_evnt_m = false(size(t_whImg));
     t_whImg_evnt_m(cols_e) = true;
-    
     if isempty(prevFitCoef)
         try
             [~,~,prevFitCoef,~,startOfEvent,endOfEvent] = ...
@@ -114,7 +112,6 @@ if isempty(startOfEvent)
         end
     end
 end
-
 if ~isempty(startOfEvent)
     s = startOfEvent;
     e = endOfEvent;
@@ -123,17 +120,52 @@ if ~isempty(startOfEvent)
     dc = abs(s - cols_e(1));
     cols_e = s:e;
 end
-
 % mask of t profile of event, take in to account also fit with exp. rise
 % function
 t_event_prof_m = t_whImg_evnt_m(cols_e);%false(size(cols_e));
 % t_event_prof_m(startOfEvent-cols_e(1)+1:endOfEvent-cols_e(1)+1) = true;
 
+% expand spark area in x dimension
+[~, c_m_t_bs] = max(t_spark_prof_whImg(cols_e));
+c_m_whImg = cols_e(1)-1+c_m_t_bs;
+x_spark_prof_whImg = ...
+    mean( img(:, c_m_whImg-(n_px_x-1)/2:c_m_whImg+(n_px_x-1)/2), 2);
+x_spark_prof_whImg_m = false(size(x_spark_prof_whImg));
+x_spark_prof_whImg_m(rows_e) = true;
+% position of peak in x profile
+if all(x_spark_prof_whImg_m)
+    x_spark_prof_whImg_evnt = x_spark_prof_whImg;
+    x_spark_prof_whImg_evnt(~x_spark_prof_whImg_m) = -Inf;
+    [~, peakXPosPx] = max(x_spark_prof_whImg_evnt);
+else
+    [~, peakXPosPx] = max(x_spark_prof_whImg);
+end
+% try to expand in x dimension
+try
+    % use maximum 5 um baseline
+    [startOfEvntX, endOfEvntX] = estimateStartAndEndOfEvent( ...
+        x_spark_prof_whImg, peakXPosPx, ...
+        maxDurOfBaseline=ceil(5/pxSzX), ...
+        evntsMask=x_spark_prof_whImg_m, ...
+        equalBaselineDur=true, ...
+        smoothSpan=round(3/pxSzX), ...
+        evntAcceptCrit=bsDetSensitivity);
+catch
+    startOfEvntX = rows_e(1);
+    endOfEvntX = rows_e(end);
+end
+if ~isempty(startOfEvntX)
+    if startOfEvntX>rows_e(1), startOfEvntX = rows_e(1); end
+    if endOfEvntX<rows_e(end), endOfEvntX = rows_e(end); end
+    dc_x = abs(startOfEvntX - rows_e(1));
+    rows_e = startOfEvntX:endOfEvntX;
+end
+
 % adjusted event area data
 imgE = img(rows_e,cols_e); 
-imgEm = imgMask(rows_e,cols_e);
+%imgEm = imgMask(rows_e,cols_e);
 imgE_subRegion_m = false(size(imgMask));
-imgE_subRegion_m(statOfSubRegions(p).SubarrayIdx{1} + rows_e(1) - 1, ...
+imgE_subRegion_m(statOfSubRegions(p).SubarrayIdx{1} + rows_e(1) - 1 + dc_x, ...
     statOfSubRegions(p).SubarrayIdx{2} + cols_e(1) - 1 + dc) = true;
 imgEm = imgE_subRegion_m(rows_e, cols_e);
 
@@ -147,18 +179,16 @@ try
         {linspace(1,size(imgE,1),size(imgE,1)),linspace(1,size(imgE,2),size(imgE,2))},...
         imgE,0.5,...
         {linspace(1,size(imgE,1),size(imgE,1)),linspace(1,size(imgE,2),size(imgE,2))});
-    
     % event data only, else NaN
     imgE_s = imgEs;
     imgE_s(~imgEm) = nan;
     % get position of centre of expanded event
-    % centr = statEvents(i).WeightedCentroid;
-    % r_m = round(centr(2)) - rows_e(1)+1;
+    [r_m, ~] = find(imgE_s==max(imgE_s,[],'all','omitmissing') );
     prof_t_imgE_s = mean(imgE_s(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), ...
         1, "omitmissing");
     %[r_m,c_m] = find(imgE_s==max(imgE_s(:)));
     [~, c_m] = max(prof_t_imgE_s);
-
+    
     % dimension for calulation of profiles (t and x) crossing peak
     % decrease width of stripe for calculation of time profile
     if (r_m-(n_px_t-1)/2 <= 0) || (r_m+(n_px_t-1)/2 > size(imgE,1))

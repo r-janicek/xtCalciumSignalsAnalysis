@@ -472,7 +472,7 @@ for i = 1:numel(imgDataPaths)
             
             allSparks = [ allSparks; [imgInfo,dataImgSparks] ];
             
-            % save results
+            % % save results
             % saveSparkDetAnalysis([],[],mainFig)
             
         end
@@ -561,7 +561,6 @@ if datasetForMaskRCNN
     fwrite(fid_val, final_json_file_val, 'char');
     fclose(fid_val);
     
-    
     % put back pointer to arrow
     set(mainFig,'Pointer','arrow')
     drawnow   
@@ -571,8 +570,8 @@ else
     % set up units of table
     allSparks.Properties.VariableUnits = ...
         {'' '' '' '' '' '' '' 'minutes' ...
-        '#sp*100um-1*s-1' '#sp*100um-1*s-1' ...
-        'deltaF/F0' 'ms' 'ms' 'ms' 'um' 'deltaF/F0*um^3' ...
+        '#sp*100um-1*s-1' '#sp*100um-1*s-1' '' ...
+        'deltaF/F0' 'ms' 'ms' 'ms' 'ms' 'ms' 'um' 'deltaF/F0*um^3' ...
         'ms' 'ms' 'deltaF/F0*ms' '' '' '' '' '' '' 'um' 'ms'};
 
 
