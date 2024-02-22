@@ -136,6 +136,7 @@ try
         tauR_est = (max(xR)-t0)*0.66;
     end
 catch
+    coeffRise = [];
     t0 = t0_est;
     bs = y0;
     tauR_est = tR_est;
@@ -156,6 +157,7 @@ try
         optLsNonLin);
     tauD_est = coeffDecay(3);
 catch
+    coeffDecay = [];
 end
 % estimate amplitude
 try

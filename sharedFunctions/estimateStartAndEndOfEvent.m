@@ -25,15 +25,24 @@ end
 
 % find start and end of event with baseline
 % mask of fitted event
-m_event = false(size(prof));
-m_event(find(~options.evntsMask(1:peakPosPx),1,'last'): ...
-    peakPosPx+find(~options.evntsMask(peakPosPx:end),1,'first')-1) = true;
+try
+    % just in case there are also other events masked
+    m_event = false(size(prof));
+    evnt_m_s = find(~options.evntsMask(1:peakPosPx),1,'last');
+    evnt_m_e_afterPeak = find(~options.evntsMask(peakPosPx:end),1,'first')-1;
+    if isempty(evnt_m_e_afterPeak)
+        evnt_m_e_afterPeak = 0;
+    end
+    evnt_m_e = peakPosPx + evnt_m_e_afterPeak;
+    m_event(evnt_m_s:evnt_m_e) = true;
+catch
+    m_event = options.evntsMask;
+end
 % take event peak position and its surrounding
 m_eventWithBsl = false(size(prof));
 m_eventWithBsl( ...
     max(1, peakPosPx-options.maxDurOfBaseline) : ...
     min(numel(prof), peakPosPx+options.maxDurOfBaseline)) = true;
-
 % smooth event with loess to estimate 
 % remove baseline, only events bigger than specified percentile stay
 prof_s = nan(size(prof));
@@ -53,7 +62,14 @@ prof_s(isnan(prof_s)) = bsl_thrsh;
 % treshold profile
 prof_s(prof_s < bsl_thrsh) = bsl_thrsh;
 % get all posible peaks in smoothed profile of events
-[valPeaks_s, locPeaks_s] = findpeaks(prof_s(m_event));
+try
+    [valPeaks_s, locPeaks_s] = findpeaks(prof_s(m_event));
+    if isempty(locPeaks_s)
+        [valPeaks_s, locPeaks_s] = max(prof_s(m_event));
+    end
+catch
+    [valPeaks_s, locPeaks_s] = max(prof_s(m_event));
+end
 locPeaks_s = locPeaks_s + find(m_event, 1, 'first') - 1;
 % get the one closest to peak of event
 [~, idx_p] = min(abs(locPeaks_s-peakPosPx));

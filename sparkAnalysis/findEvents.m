@@ -64,17 +64,30 @@ if any(bwImg(:)~=0)
         dSp = max(str2double(hObjs.h_edit_MinDurSpark.String), 20);
         if wSp < pxSzX, wSp = pxSzX; end
         if dSp < pxSzT, dSp = pxSzT; end
-        % H = fspecial('disk',min(ceil(wSp/pxSzX),ceil(dSp/pxSzT)));
-        H = fspecial('gaussian',...
-            [ceil(wSp/pxSzX),ceil(dSp/pxSzT)], ...
-            ceil(min(ceil(wSp/pxSzX),ceil(dSp/pxSzT))*0.68) );
-        % H = fspecial('average',[ceil(wSp/pxSzX),ceil(dSp/pxSzT)] );
-        [imgEventsWT,~] = imgFiltering(imgRaw,pxSzT,pxSzX);
-        imgEventsWT = imfilter(imgEventsWT,H,'symmetric');
-        % take only detected events areas, else set to 0
-        imgEventsWT(~bwImg)=0;
+        kernelSz_r = 2*ceil(wSp/2/pxSzX)+1;
+        kernelSz_c = 2*ceil(dSp/2/pxSzT)+1;
+        kernelSz = [kernelSz_r, kernelSz_c];
+        % filter with median
+        [imgEventsWT, ~] = imgFiltering(imgRaw, pxSzT, pxSzX);
+        % calculate self ratio (F/F0) of image pixelwise
+        for i = 1:size(imgEventsWT,1)
+            % self-ratio
+            imgEventsWT(i,:) = imgEventsWT(i,:) ./ ...
+                mean(imgEventsWT(i,~bwImg(i,:)));
+        end
+        % filter with wiener filter
+        imgEventsWT = wiener2( ...
+            padarray(imgEventsWT, (kernelSz-1)/2, "symmetric"), kernelSz);
+        imgEventsWT = imgEventsWT((kernelSz_r-1)/2+1:end-(kernelSz_r-1)/2, ...
+            (kernelSz_c-1)/2+1:end-(kernelSz_c-1)/2);
+        % filter with gauss
+        %imgEventsWT = imgaussfilt(imgEventsWT, 1, "FilterSize",kernelSz);
+        % average filter
+        imgEventsWT = imboxfilt(imgEventsWT, kernelSz);
         % normalize to [0,1]
-        imgEventsWT = imgEventsWT ./ max(imgEventsWT(:));
+        imgEventsWT = (imgEventsWT - min(imgEventsWT(:))) ./ ...
+            (max(imgEventsWT(:)) - min(imgEventsWT(:)));
+        %imgEventsWT = imgEventsWT ./ max(imgEventsWT(:));
         % levels from 1 to 50
         imgRange = prctile(imgEventsWT(imgEventsWT~=0), [1 99]);
         noiseEst = std(imgEventsWT(imgEventsWT~=0));
@@ -89,11 +102,20 @@ if any(bwImg(:)~=0)
                 end
             end
         end
-
-        % watershed
+        % watershed transform
         L = watershed(-imgEventsWT,8);
         L(L>0)=1;
         bwImg(~logical(L)) = 0;
+
+        % figure
+        % tiledlayout(3,1)
+        % ax1 = nexttile;
+        % imagesc(imgRaw)
+        % ax2 = nexttile;
+        % imagesc(imgEventsWT)
+        % ax3 = nexttile;
+        % imagesc(bwImg)
+        % linkaxes([ax1, ax2, ax3])
     end
     
     % find all connected components

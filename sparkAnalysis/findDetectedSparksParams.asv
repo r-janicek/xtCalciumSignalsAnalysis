@@ -457,7 +457,8 @@ if ~isempty(statSparks)
                     else
                         t_profR_fit = nan(size(t_rise));
                     end
-                    if ~isempty(out_t_prof.coeffDecay)
+                    t_decay = t_ups(peakData_ups.pos:end);
+                    if ~isempty(out_t_prof.coeffRise)
                         t_profD_fit = out_t_prof.yFitFunD( ...
                             out_t_prof.coeffDecay, t_decay);
                     else

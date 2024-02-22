@@ -31,7 +31,7 @@ startOfSpark = zeros(length(peaks_vals),1);
 endOfSpark = zeros(length(peaks_vals),1);
 detectedEventsMask = false(numel(prof_t),1);
 
-maxDurOfBaseline = ceil(50/pxSz_t); % maximum duration of baseline in points
+maxDurOfBaseline = ceil(100/pxSz_t); % maximum duration of baseline in points
 
 % use previous starts and ends of sparks if any, otherwise find them
 if ~isempty(peaks_vals)
