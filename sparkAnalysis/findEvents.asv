@@ -109,15 +109,15 @@ if any(bwImg(:)~=0)
         L(L>0)=1;
         bwImg(~logical(L)) = 0;
 
-        % figure
-        % tiledlayout(3,1)
-        % ax1 = nexttile;
-        % imagesc(imgRaw)
-        % ax2 = nexttile;
-        % imagesc(imgEventsWT)
-        % ax3 = nexttile;
-        % imagesc(bwImg)
-        % linkaxes([ax1, ax2, ax3])
+        figure
+        tiledlayout(3,1)
+        ax1 = nexttile;
+        imagesc(imgRaw)
+        ax2 = nexttile;
+        imagesc(imgEventsWT)
+        ax3 = nexttile;
+        imagesc(bwImg)
+        linkaxes([ax1, ax2, ax3])
     end
     
     % find all connected components

@@ -97,12 +97,17 @@ if ~isempty(t_prof)
         pos_25 = pos_25 - 1;
     end
     try
-        f_line25_75 = fit(t(pos_25:pos_75),t_prof(pos_25:pos_75),'poly1');
+        f_line25_75 = fit(t(pos_25:pos_75),t_prof(pos_25:pos_75),'poly1',);
         % t_fit = t(find(t_prof>bs_t,1,'first'):pos_t);
         % line25_75 = feval(f_line25_75,t_fit);
         % t0_line25_75 = t_fit(find(line25_75<bs_t,1,'last'));
+
+figure
+plot(t(pos_25:pos_75),t_prof(pos_25:pos_75),'ok')
+hold on 
+plot(t(pos_25:pos_75), feval(f_line25_75, t(pos_25:pos_75)), 'r')
+
         t0_line25_75 = (bs_t-f_line25_75.p2)/f_line25_75.p1;
-        assert(t0_line25_75>0)
     catch
         % find t0 (start of spark) as 1% amplitude increase over baseline 
         t0_line25_75 = t( numel(t_prof) - ...
