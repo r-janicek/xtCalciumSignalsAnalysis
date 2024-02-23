@@ -603,7 +603,8 @@ parametersOfSparkDetection = ...
     [{'expFactor'},str2double(hObjs.h_edit_expFactor.String)];
     [{'minSparkDuration (ms)'},str2double(hObjs.h_edit_MinDurSpark.String)];
     [{'minSparkWidth (um)'},str2double(hObjs.h_edit_MinWidthSpark.String)];
-    [hObjs.txt_spDet.String,{''}] ];
+    ];
+    %[hObjs.txt_spDet.String,{''}] ];
 
 sparkSelectionCriteria = ...
     [ [{'method to analyze sparks parameters:'},...
