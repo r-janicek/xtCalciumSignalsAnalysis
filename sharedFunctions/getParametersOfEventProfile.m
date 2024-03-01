@@ -71,10 +71,12 @@ if ~isempty(t_prof)
         % get full duration in half maximum
         [FDHM, half_max_t, half_max_t_1, half_max_t_2] = ...
             fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50);
-        [~, ~, ~, ~, pos_25, ~] = fullDurationCalc( ...
-            t, t_prof, sE, eE, val_t, pos_t, bs_t, 25);
-        [~, ~, ~, ~, pos_75, ~] = fullDurationCalc( ...
-            t, t_prof, sE, eE, val_t, pos_t, bs_t, 75);
+        % get positions at defined percentiles (part of event rise fitted by line)
+        percRise = [10,90];
+        [~, ~, ~, ~, pos_percRise_1, ~] = fullDurationCalc( ...
+            t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(1));
+        [~, ~, ~, ~, pos_percRise_2, ~] = fullDurationCalc( ...
+            t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(2));
         % [~, ~, ~, ~, pos_10, ~] = fullDurationCalc( ...
         %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 10);
         % [~, ~, ~, ~, pos_90, ~] = fullDurationCalc( ...
@@ -84,57 +86,57 @@ if ~isempty(t_prof)
         half_max_t = nan;
         half_max_t_1 = nan;
         half_max_t_2 = nan;
-        pos_25 = nan;
-        pos_75 = nan;
+        pos_percRise_1 = nan;
+        pos_percRise_2 = nan;
     end
 
     % find t0 (start of spark) as a cross section of 0 and line fit of part
     % of event with amplitudes between 25 and 75 % of max amplitude
-    if pos_25 == pos_75
-        pos_25 = pos_25 - 1;
+    if pos_percRise_1 == pos_percRise_2
+        pos_percRise_1 = pos_percRise_1 - 1;
     end
-    if pos_25 == pos_75
-        pos_25 = pos_25 - 1;
+    if pos_percRise_1 == pos_percRise_2
+        pos_percRise_1 = pos_percRise_1 - 1;
     end
     try
-        f_line25_75 = fit(t(pos_25:pos_75),t_prof(pos_25:pos_75),'poly1');
+        f_line_percRise = fit(t(pos_percRise_1:pos_percRise_2),t_prof(pos_percRise_1:pos_percRise_2),'poly1');
         % t_fit = t(find(t_prof>bs_t,1,'first'):pos_t);
         % line25_75 = feval(f_line25_75,t_fit);
         % t0_line25_75 = t_fit(find(line25_75<bs_t,1,'last'));
-        t0_line25_75 = (bs_t-f_line25_75.p2)/f_line25_75.p1;
-        assert(t0_line25_75>0)
+        t0_fittedLine = (bs_t-f_line_percRise.p2)/f_line_percRise.p1;
+        assert(t0_fittedLine>0)
     catch
         % find t0 (start of spark) as 1% amplitude increase over baseline 
-        t0_line25_75 = t( numel(t_prof) - ...
+        t0_fittedLine = t( numel(t_prof) - ...
             find(flipud(t_prof) < ((val_t-bs_t)/100 + bs_t), 1, 'first') + 1);
     end
     if isempty(t0)
-        t0 = t0_line25_75; 
+        t0 = t0_fittedLine; 
     end
     % get time to peak
     TTP = t(pos_t) - t0;
-    TTP_line25_75 = t(pos_t) - t0_line25_75;
+    TTP_fittedLine = t(pos_t) - t0_fittedLine;
     if (TTP<0) || isempty(TTP), TTP=0; end
-    if (TTP_line25_75<0) || isempty(TTP_line25_75), TTP_line25_75=0; end
+    if (TTP_fittedLine<0) || isempty(TTP_fittedLine), TTP_fittedLine=0; end
     
 else
     FDHM = nan;
     half_max_t = nan;
     half_max_t_1 = nan;
     half_max_t_2 = nan;
-    pos_25 = nan;
-    pos_75 = nan;
+    pos_percRise_1 = nan;
+    pos_percRise_2 = nan;
     t0 = nan;
-    t0_line25_75 = nan;
+    t0_fittedLine = nan;
     TTP = nan;
-    TTP_line25_75 = nan;
+    TTP_fittedLine = nan;
 end
 
 
 %% get spatial parameters
 if ~isempty(x_prof)
     %[val_x,pos_x] = max(x_prof);
-    [pks_x,locs_x,w_x,~] = findpeaks(x_prof, x, ...
+    [pks_x, locs_x, w_x, ~] = findpeaks(x_prof, x, ...
         'SortStr','descend', 'Annotate','extents');
     try
         if pks_x == max(x_prof)
@@ -154,45 +156,50 @@ if ~isempty(x_prof)
     end
 
     try
-        half_max_x = (val_x(1)-bs_x)/2 + bs_x;
-        max_x_25perc = (val_x(1)-bs_x)*0.25 + bs_x;
+        % get full width in half maximum
+        [FWHM, half_max_x, half_max_x_1, half_max_x_2] = ...
+            fullDurationCalc(x, x_prof, 1, numel(x_prof), ...
+            val_x, pos_x, bs_x, 50);
 
-        y_x1 = x_prof(1:pos_x-1);
-        y_x2 = cat(1 ,-inf(pos_x-1,1), x_prof(pos_x:(length(x_prof))));
-
-        % find position of first half max
-        y_x1_r = flipud(y_x1);
-        d_y_x1 = gradient(y_x1_r);
-
-        indDer1 = find( d_y_x1>=0 & y_x1_r<half_max_x,1,'first');
-        if ~isempty(indDer1)
-            y_x1_r(indDer1:end) = 0;
-        end
-
-        y_x1 = flipud(y_x1_r);
-
-        [~,pos1_x] = min(abs(y_x1 - half_max_x));
-
-        % find position of second half max
-        d_y_x2 = gradient(y_x2);
-
-        indDer2 = find( d_y_x2>=0 & y_x2<max_x_25perc & x_indx>pos_x,1,'first');
-        if ~isempty(indDer2)
-            y_x2(indDer2:end) = 0;
-        end
-
-        [~,pos2_x] = min(abs(y_x2 - half_max_x));
-
-        half_max_x_1 = x(pos1_x);
-        half_max_x_2 = x(pos2_x);
-
-        FWHM = half_max_x_2 - half_max_x_1;
-
-        if isempty(FWHM) || isnan(FWHM)
-            FWHM = w_x(1);
-        end
-
-        if FWHM > max(x), FWHM = max(x); end
+        % half_max_x = (val_x(1)-bs_x)/2 + bs_x;
+        % max_x_25perc = (val_x(1)-bs_x)*0.25 + bs_x;
+        % 
+        % y_x1 = x_prof(1:pos_x-1);
+        % y_x2 = cat(1 ,-inf(pos_x-1,1), x_prof(pos_x:(length(x_prof))));
+        % 
+        % % find position of first half max
+        % y_x1_r = flipud(y_x1);
+        % d_y_x1 = gradient(y_x1_r);
+        % 
+        % indDer1 = find( d_y_x1>=0 & y_x1_r<half_max_x,1,'first');
+        % if ~isempty(indDer1)
+        %     y_x1_r(indDer1:end) = 0;
+        % end
+        % 
+        % y_x1 = flipud(y_x1_r);
+        % 
+        % [~,pos1_x] = min(abs(y_x1 - half_max_x));
+        % 
+        % % find position of second half max
+        % d_y_x2 = gradient(y_x2);
+        % 
+        % indDer2 = find( d_y_x2>=0 & y_x2<max_x_25perc & x_indx>pos_x,1,'first');
+        % if ~isempty(indDer2)
+        %     y_x2(indDer2:end) = 0;
+        % end
+        % 
+        % [~,pos2_x] = min(abs(y_x2 - half_max_x));
+        % 
+        % half_max_x_1 = x(pos1_x);
+        % half_max_x_2 = x(pos2_x);
+        % 
+        % FWHM = half_max_x_2 - half_max_x_1;
+        % 
+        % if isempty(FWHM) || isnan(FWHM)
+        %     FWHM = w_x(1);
+        % end
+        % 
+        % if FWHM > max(x), FWHM = max(x); end
 
     catch
         FWHM = w_x(1);
@@ -212,14 +219,14 @@ sparkMass = Ampl*1.206*FWHM^3;
 
 eventParams.amplitude = Ampl;
 eventParams.TTP = TTP;
-eventParams.TTP_line25_75 = TTP_line25_75;
+eventParams.TTP_fittedLine = TTP_fittedLine;
 eventParams.FDHM = FDHM;
 eventParams.FWHM = FWHM;
 eventParams.sparkMass = sparkMass;
 eventParams.bs_t = bs_t;
 eventParams.bs_x = bs_x;
 eventParams.t0 = t0;
-eventParams.t0_line25_75 = t0_line25_75;
+eventParams.t0_fittedLine = t0_fittedLine;
 eventParams.t_max = t(pos_t);
 eventParams.v_max = val_t;
 eventParams.half_max_t = half_max_t;

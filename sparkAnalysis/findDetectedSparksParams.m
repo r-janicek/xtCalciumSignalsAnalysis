@@ -147,8 +147,8 @@ if ~isempty(statSparks)
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eP_2Dfit.amplitude;
                     eventParams.t0(i,1) = eP_2Dfit.t0 + eventROIstart_t;
-                    eventParams.t0_line25_75(i,1) = eP_2Dfit.t0_line25_75 + eventROIstart_t;
-                    eventParams.TTP_line25_75(i,1) = eP_2Dfit.TTP_line25_75;
+                    eventParams.t0_fittedLine(i,1) = eP_2Dfit.t0_fittedLine + eventROIstart_t;
+                    eventParams.TTP_fittedLine(i,1) = eP_2Dfit.TTP_fittedLine;
                     eventParams.TTP(i,1) = eP_2Dfit.TTP;
                     eventParams.FDHM(i,1) = eP_2Dfit.FDHM;
                     eventParams.FWHM(i,1) = eP_2Dfit.FWHM;
@@ -173,8 +173,8 @@ if ~isempty(statSparks)
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
-                    eventParams.t0_line25_75(i,1) = nan;
-                    eventParams.TTP_line25_75(i,1) = nan;
+                    eventParams.t0_fittedLine(i,1) = nan;
+                    eventParams.TTP_fittedLine(i,1) = nan;
                     eventParams.TTP(i,1) = nan;
                     eventParams.FDHM(i,1) = nan;
                     eventParams.FWHM(i,1) = nan;
@@ -260,8 +260,8 @@ if ~isempty(statSparks)
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eP_profs.amplitude;
                     eventParams.t0(i,1) = eP_profs.t0 + eventROIstart_t;
-                    eventParams.t0_line25_75(i,1) = eP_profs.t0_line25_75 + eventROIstart_t;
-                    eventParams.TTP_line25_75(i,1) = eP_profs.TTP_line25_75;
+                    eventParams.t0_fittedLine(i,1) = eP_profs.t0_fittedLine + eventROIstart_t;
+                    eventParams.TTP_fittedLine(i,1) = eP_profs.TTP_fittedLine;
                     eventParams.TTP(i,1) = eP_profs.TTP;
                     eventParams.FDHM(i,1) = eP_profs.FDHM;
                     eventParams.FWHM(i,1) = eP_profs.FWHM;
@@ -274,8 +274,8 @@ if ~isempty(statSparks)
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
-                    eventParams.t0_line25_75(i,1) = nan;
-                    eventParams.TTP_line25_75(i,1) = nan;
+                    eventParams.t0_fittedLine(i,1) = nan;
+                    eventParams.TTP_fittedLine(i,1) = nan;
                     eventParams.TTP(i,1) = nan;
                     eventParams.FDHM(i,1) = nan;
                     eventParams.FWHM(i,1) = nan;
@@ -321,8 +321,8 @@ if ~isempty(statSparks)
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eParamsEst.amplitude;
                     eventParams.t0(i,1) = eParamsEst.t0 + eventROIstart_t;
-                    eventParams.t0_line25_75(i,1) = eParamsEst.t0_line25_75 + eventROIstart_t;
-                    eventParams.TTP_line25_75(i,1) = eParamsEst.TTP_line25_75;
+                    eventParams.t0_fittedLine(i,1) = eParamsEst.t0_fittedLine + eventROIstart_t;
+                    eventParams.TTP_fittedLine(i,1) = eParamsEst.TTP_fittedLine;
                     eventParams.TTP(i,1) = eParamsEst.TTP;
                     eventParams.FDHM(i,1) = eParamsEst.FDHM;
                     eventParams.FWHM(i,1) = eParamsEst.FWHM;
@@ -335,8 +335,8 @@ if ~isempty(statSparks)
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = nan;
                     eventParams.t0(i,1) = nan;
-                    eventParams.t0_line25_75(i,1) = nan;
-                    eventParams.TTP_line25_75(i,1) = nan;
+                    eventParams.t0_fittedLine(i,1) = nan;
+                    eventParams.TTP_fittedLine(i,1) = nan;
                     eventParams.TTP(i,1) = nan;
                     eventParams.FDHM(i,1) = nan;
                     eventParams.FWHM(i,1) = nan;

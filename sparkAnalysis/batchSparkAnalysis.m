@@ -471,8 +471,7 @@ for i = 1:numel(imgDataPaths)
                 'expCond' 'imgName' 'drugAplTime' 'sparkFreq' 'correctedSparkFreq'});
             
             allSparks = [ allSparks; [imgInfo,dataImgSparks] ];
-            
-            % % save results
+            % save results
             % saveSparkDetAnalysis([],[],mainFig)
             
         end
@@ -583,7 +582,7 @@ drawnow
 
 %% save all sparks table 
 % set up path for xls file
-path_xls = fullfile(folderPath,'sparkDetResults.xls');
+path_xls = fullfile(folderPath,'sparkDetResults_Matlab.xls');
 
 % delete xls file if exist
 if exist(path_xls, 'file')
@@ -603,8 +602,7 @@ parametersOfSparkDetection = ...
     [{'expFactor'},str2double(hObjs.h_edit_expFactor.String)];
     [{'minSparkDuration (ms)'},str2double(hObjs.h_edit_MinDurSpark.String)];
     [{'minSparkWidth (um)'},str2double(hObjs.h_edit_MinWidthSpark.String)];
-    ];
-    %[hObjs.txt_spDet.String,{''}] ];
+    [hObjs.txt_spDet.String,{''}] ];
 
 sparkSelectionCriteria = ...
     [ [{'method to analyze sparks parameters:'},...

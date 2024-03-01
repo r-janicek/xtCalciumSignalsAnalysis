@@ -23,9 +23,7 @@ smoothIter = str2double(get(hObjs.h_edit_smoothIter,'String'));
 baseIter = str2double(get(hObjs.h_edit_baseIter,'String'));
 tresh = str2double(get(hObjs.h_edit_tresh,'String'));
 expFactor = str2double(get(hObjs.h_edit_expFactor,'String'));
-
 watershedTransform = get(hObjs.check_watershed,'Value');
-% sld_spDet = hObjs.sld_spDet;
 % last pressed pushbutton to detect events
 detectEventsPB = getappdata(mainFig,'lastPressedPusbutton'); 
   
@@ -55,8 +53,7 @@ if any(bwImg(:)~=0)
     
     % do watersher and split close merged events if selected
     if watershedTransform
-        % spDetS = round(get(hObjs.sld_spDet,'Value')); % in percentage
-        % spDetS = get(sld_spDet,'Value');
+        spDetS = round(get(hObjs.sld_spDet,'Value')); % in percentage
         % parameters of watershed detection/ also filtering, 
         % wSp in um and dSp in ms
         % filter size is increasing from min values (defined by user) with decreasing sensitivity  
@@ -81,20 +78,18 @@ if any(bwImg(:)~=0)
         imgEventsWT = imgEventsWT((kernelSz_r-1)/2+1:end-(kernelSz_r-1)/2, ...
             (kernelSz_c-1)/2+1:end-(kernelSz_c-1)/2);
         % filter with gauss
-        imgEventsWT = imgaussfilt(imgEventsWT, 1, "FilterSize",kernelSz);
+        imgEventsWT = imgaussfilt(imgEventsWT, 2, "FilterSize",kernelSz);
         % average filter
-        imgEventsWT = imboxfilt(imgEventsWT, kernelSz);
+        % imgEventsWT = imboxfilt(imgEventsWT, kernelSz);
         % normalize to [0,1]
         imgEventsWT = (imgEventsWT - min(imgEventsWT(:))) ./ ...
             (max(imgEventsWT(:)) - min(imgEventsWT(:)));
         % imgEventsWT = imgEventsWT ./ max(imgEventsWT(:));
-        % % levels from 1 to 50
-        % %imgRange = prctile(imgEventsWT(bwImg~=0), [1 99]);
+        % estimate noise from baseline 
         noiseEst = std(imgEventsWT(~bwImg));
-        % nL_min = 1;
-        % nL_max = ceil(1/noiseEst);  %3*ceil( (imgRange(2)-imgRange(1)) / noiseEst );
-        % convert image to n levels (each level = 2*noise)
-        imgEventsWT = round(imgEventsWT ./ (2*noiseEst));
+        lvl_step = 4*(1-spDetS/100)*noiseEst;
+        % convert image to n levels (each level = k*noise)
+        imgEventsWT = ceil(imgEventsWT ./ lvl_step);
         % nL = round(((nL_max-nL_min)/(100-1))*spDetS + nL_min - (nL_max-nL_min)/(100-1));
         % % change image to image with nL levels of intensity
         % for r = 1:size(imgEventsWT, 1)

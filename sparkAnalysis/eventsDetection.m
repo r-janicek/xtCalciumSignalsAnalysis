@@ -43,8 +43,10 @@ switch detectionFlag
             catch
             end
             rmappdata(mainFig,'sparkDetection')
+            sparkDetection = getappdata(mainFig,'sparkDetection');
+        else
+            sparkDetection = getappdata(mainFig,'sparkDetection');
         end
-
         % find events
         events = findEvents(mainFig, imgDataXTfluoR);
     case 'update'
@@ -73,7 +75,6 @@ m9 = uimenu(cm,'Text','delete detected event', ...
     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
 m10 = uimenu(cm,'Text','delete multiple detected events', ...
     'MenuSelectedFcn',{@setTypeOfCalciumEvent, mainFig});
-
 
 detectedEventsRec = gobjects(length(events),1);
 detectedEventsMask = gobjects(length(events),1);
@@ -110,7 +111,7 @@ for i = 1:length(events)
         'LineWidth',2,'Tag',num2str(i),...
         'ButtonDownFcn', {@setTypeOfCalciumEvent, mainFig}, ...
         'UIContextMenu', cm);
-
+    
     % show detected mask
     detectedEventsMask(i) = patch( ...
         'Faces',(1:numel(events(i).Boundary(:,2))), ...
@@ -122,12 +123,12 @@ for i = 1:length(events)
         'LineWidth',1, 'Tag',num2str(i),...
         'ButtonDownFcn', {@setTypeOfCalciumEvent, mainFig}, ...
         'UIContextMenu', cm);
-
+        
     text(hObjs.ax_img,detectedEventsRec(i).Position(1),...
         detectedEventsRec(i).Position(2),num2str(i),...
         'FontSize',10,'VerticalAlignment','bottom','FontWeight','bold',...
         'Color',detectedEventsRec(i).EdgeColor,'Tag','detectedEventRecText')
-
+    
     clearvars pos
 end
 
