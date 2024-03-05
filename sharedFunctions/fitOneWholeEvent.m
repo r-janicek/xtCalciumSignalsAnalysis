@@ -18,7 +18,7 @@ options:
     x_ups = upscaled independent variable
     mProf = mask of profile
     splineOrder
-    spline_nK = number of knots
+    spline_knots_seq = sequence of knots
     addMoreWeightToEvent
 %}
 arguments
@@ -33,7 +33,7 @@ arguments
     options.x_ups (:,1) {mustBeNumeric} = linspace(x(1),x(end),numel(x)*10)
     options.mProf (:,1) logical = true(size(x))
     options.splineOrder (1,1) {mustBeInteger, mustBePositive} = 4
-    options.spline_nK (1,1) {mustBeNumeric, mustBeFinite} = 0
+    options.spline_knots_seq (:,1) {mustBeNumeric, mustBeFinite} = 0
     options.addMoreWeightToEvent (1,1) logical = false
 end
 
@@ -179,39 +179,40 @@ switch model
             (x>=p(5)).*( (p(4)-p(7)).*(1-exp(-(p(5)-p(1))./p(3))).*exp(-(x-p(5))./p(6))+p(7) );
 
     case 'spline'
-        %setup number of knots for spline fitting
-        if options.spline_nK==0
+        % setup number of knots for spline fitting
+        if options.spline_knots_seq==0
             % every 5 points
-            options.spline_nK = ceil(numel(x)/5);
+            options.spline_knots_seq = linspace(x(1), x(end), ...
+                2+fix(length(x)/5));
         end
         % coefficients: [spline coefficients]
         % splOrd = 4; % spline order, poly3
-        spl0  = spap2(options.spline_nK, ...
+        spl0  = spap2(...
+            augknt(options.spline_knots_seq, options.splineOrder), ...
             options.splineOrder, x, y);  % first guess of spline coefficients
         % newknt for a possibly better knot distribution
         try
-            knots = newknt(spl0);
-            spl0  = spap2(knots, options.splineOrder, x, y);
+            spl0  = spap2(newknt(spl0), options.splineOrder, x, y);
         catch
         end
         p0 = [spl0.coefs];
         fitFun = @(p,x) fnval(spmak(spl0.knots, spl0.coefs),x);
 
     case 'constThenSpline'
-        if options.spline_nK==0
+        if options.spline_knots_seq==0
             % every 10 ms
-            options.spline_nK = ceil((max(x(x>t0))-min(x(x>t0)))/5);
+            options.spline_knots_seq = linspace(t0, x(end), ...
+                2+fix(length(x(x>=t0))*dx/10));
         end
         % coefficients: [t0, F01, spline coefficients]
         % splOrd = 4; % spline order, poly3
         % first guess of spline coefficients
-        spl0  = spap2(options.spline_nK, ...
+        spl0  = spap2(augknt(options.spline_knots_seq, options.splineOrder), ...
             options.splineOrder, x(x>t0), y(x>t0));
         % newknt for a possibly better knot distribution
         try
-            knots = newknt(spl0);
-            spl0  = spap2(knots, ...
-                options.splineOrder, x(x>t0), y(x>t0));
+            spl0  = spap2(newknt(spl0), options.splineOrder, ...
+                x(x>t0), y(x>t0));
         catch
         end
         p0 = [t0, bs, spl0.coefs];
@@ -363,20 +364,20 @@ switch  model
         catch
             % if fails fit with spline
             model = 'spline';
-            %setup number of knots for spline fitting
-            if options.spline_nK==0
+            % setup number of knots for spline fitting
+            if options.spline_knots_seq==0
                 % every 5 points
-                options.spline_nK = ...
-                    ceil((max(x)-min(x))/(5*dx));
+                options.spline_knots_seq = linspace(x(1), x(end), ...
+                    2+fix(length(x)/5));
             end
             % coefficients: [spline coefficients]
             % splOrd = 4; % spline order, poly3
-            spl0  = spap2(options.spline_nK, ...
+            spl0  = spap2(...
+                augknt(options.spline_knots_seq, options.splineOrder), ...
                 options.splineOrder, x, y);  % first guess of spline coefficients
             % newknt for a possibly better knot distribution
             try
-                knots = newknt(spl0);
-                spl0  = spap2(knots, options.splineOrder, x, y);
+                spl0  = spap2(newknt(spl0), options.splineOrder, x, y);
             catch
             end
             p0 = [spl0.coefs];
@@ -388,11 +389,11 @@ switch  model
 end
 
 % get fit
-yFit = fitFun(coef,x);
+yFit = fitFun(coef, x);
 try
     switch model
         case {'1expR1expD', 'constThenSpline'}
-            yFit_ups = pchip(x, yFit, options.x_ups);
+            yFit_ups = interp1(x, yFit, options.x_ups, 'makima');
         otherwise
             yFit_ups = fitFun(coef,options.x_ups);
     end
@@ -400,10 +401,13 @@ catch
     options.x_ups = [];
     yFit_ups = [];
 end
+
 % figure('Name',sprintf("%s",model))
 % plot(x,y,'ok')
 % hold on
-% plot(options.x_ups,yFit_ups,'r')
+% plot(options.x_ups,yFit_ups,'or')
+% plot(options.x_ups,yFit_ups2,'ob')
+% 
 % plot(x,fitFun(p0,x),'g')
 % plot(x,fitFun(coef,x),'b')
                   
