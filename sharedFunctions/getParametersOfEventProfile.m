@@ -70,13 +70,13 @@ if ~isempty(t_prof)
     try
         % get full duration in half maximum
         [FDHM, half_max_t, half_max_t_1, half_max_t_2] = ...
-            fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50);
+            fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50, tProf_m);
         % get positions at defined percentiles (part of event rise fitted by line)
         percRise = [10,90];
         [~, ~, ~, ~, pos_percRise_1, ~] = fullDurationCalc( ...
-            t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(1));
+            t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(1), tProf_m);
         [~, ~, ~, ~, pos_percRise_2, ~] = fullDurationCalc( ...
-            t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(2));
+            t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(2), tProf_m);
         % [~, ~, ~, ~, pos_10, ~] = fullDurationCalc( ...
         %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 10);
         % [~, ~, ~, ~, pos_90, ~] = fullDurationCalc( ...
@@ -158,7 +158,7 @@ if ~isempty(x_prof)
         % get full width in half maximum
         [FWHM, half_max_x, half_max_x_1, half_max_x_2] = ...
             fullDurationCalc(x, x_prof, 1, numel(x_prof), ...
-            val_x, pos_x, bs_x, 50);
+            val_x, pos_x, bs_x, 50, true(size(x)));
     catch
         FWHM = w_x(1);
         half_max_x = nan;

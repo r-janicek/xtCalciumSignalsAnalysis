@@ -233,6 +233,7 @@ switch model
             cdf('Normal',x,p(2)+(p(3)^2/p(4)),p(3)) + p(5);
 
     case 'CaSpike'
+        % Zahradnikova 2007, Kinetics of calcium spikes in rat cardiac myocytes
         % coefficients: [t0, F0, FM, tA, tI, FI]
         % coeff_n = {'t0','F01','Ampl','tauR','tauD','FI'};
         p0 = [t0 bs A_est tauR_est tauD_est 1];

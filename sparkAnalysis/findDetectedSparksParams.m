@@ -4,7 +4,7 @@ function eventParams = findDetectedSparksParams(...
 
 % img = filtered data or filtered normalized data
 % statSparks = statistic from sparks detection
-% startOfSpark, endOfSpark, prevFitCoeffs = previous fit with fitSparkRise
+% startOfSpark, endOfSpark, prevFitCoeffs = previous fit with fitEventRise
 % function
 
 % posOfROI = from spark recovery analysis

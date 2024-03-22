@@ -107,17 +107,19 @@ switch  h_O.Type
                 locs = posOfEvents(:,2);
                 locs = locs(index);
                 delete(h_FitLine);
-                               
-                [h_line_n, detectedEventsMask_n, coef_n, ~,... 
-                    startOfSpark,endOfSpark] = fitSparkRise(pxSzT, ...
-                    t, prof_t, pks, locs, h_O, fitCoefSparkRise, ...
-                    1e-3, 400, smooth_span, bs_crit, [], [], prof_t_evnts_m);
-                              
-                profileAnalysis.fitCoefSparkRise = coef_n;
-                profileAnalysis.h_FitLine = h_line_n;
-                profileAnalysis.detectedEventsMask = detectedEventsMask_n;
-                profileAnalysis.startOfSpark = startOfSpark;
-                profileAnalysis.endOfSpark = endOfSpark;
+
+                % fit sparks and plot results
+                evntRiseFits = fitEventRise(t, prof_t, "local", ...
+                    peaks_vals=pks, peaks_locs=locs, ...
+                    coefPrevFit=fitCoefSparkRise, ...
+                    ax_prof=h_O, bs_crit=bs_crit, smooth_span=smooth_span, ...
+                    evntsMask=prof_t_evnts_m, numOfFitIter=400);
+
+                profileAnalysis.fitCoefSparkRise = evntRiseFits.coef;
+                profileAnalysis.h_FitLine = evntRiseFits.h_line;
+                profileAnalysis.detectedEventsMask = evntRiseFits.detectedEventsMask;
+                profileAnalysis.startOfSpark = evntRiseFits.startOfEvent;
+                profileAnalysis.endOfSpark = evntRiseFits.endOfEvent;
                 profileAnalysis.h_PeaksCirc = h_circ_n;
                 profileAnalysis.posOfEvents = num2cell(posOfPeaks_n);
                 
@@ -157,18 +159,19 @@ switch  h_O.Type
                           
                             delete(h_FitLine);
                             
-                            % new fits of peaks                           
-                            [h_line_n, detectedEventsMask_n, coef_n, ~, ...
-                                startOfSpark, endOfSpark] = fitSparkRise( ...
-                                pxSzT, t, prof_t, pks, locs, h_O.Parent, ...
-                                fitCoefSparkRise, 1e-3, 400, ...
-                                smooth_span, bs_crit, [], [], prof_t_evnts_m);
-                            
-                            profileAnalysis.fitCoefSparkRise = coef_n;
-                            profileAnalysis.h_FitLine = h_line_n;
-                            profileAnalysis.detectedEventsMask = detectedEventsMask_n;
-                            profileAnalysis.startOfSpark = startOfSpark;
-                            profileAnalysis.endOfSpark = endOfSpark;
+                            % new fits of peaks                              
+                            evntRiseFits = fitEventRise(t, prof_t, "local", ...
+                                peaks_vals=pks, peaks_locs=locs, ...
+                                coefPrevFit=fitCoefSparkRise, ...
+                                ax_prof=h_O.Parent, bs_crit=bs_crit, ...
+                                smooth_span=smooth_span, ...
+                                evntsMask=prof_t_evnts_m, numOfFitIter=400);
+
+                            profileAnalysis.fitCoefSparkRise = evntRiseFits.coef;
+                            profileAnalysis.h_FitLine = evntRiseFits.h_line;
+                            profileAnalysis.detectedEventsMask = evntRiseFits.detectedEventsMask;
+                            profileAnalysis.startOfSpark = evntRiseFits.startOfEvent;
+                            profileAnalysis.endOfSpark = evntRiseFits.endOfEvent;
                             profileAnalysis.h_PeaksCirc = h_PeaksCirc;
                             profileAnalysis.posOfEvents = num2cell(posOfEvents);
                             
@@ -262,14 +265,18 @@ switch  h_O.Type
                         locs = locs(index);
                         delete(h_FitLine);                        
                         
-                        [h_line_n,detectedEventsMask_n,coef_n,~,startOfSpark,endOfSpark] = ...
-                            fitSparkRise(pxSzT,t,prof_t,pks,locs,h_O.Parent,fitCoefSparkRise,1e-3,400,smooth_span,bs_crit,[],[], prof_t_evnts_m);
-                        
-                        profileAnalysis.fitCoefSparkRise = coef_n;
-                        profileAnalysis.h_FitLine = h_line_n;
-                        profileAnalysis.detectedEventsMask = detectedEventsMask_n;
-                        profileAnalysis.startOfSpark = startOfSpark;
-                        profileAnalysis.endOfSpark = endOfSpark;
+                        evntRiseFits = fitEventRise(t, prof_t, "local", ...
+                                peaks_vals=pks, peaks_locs=locs, ...
+                                coefPrevFit=fitCoefSparkRise, ...
+                                ax_prof=h_O.Parent, bs_crit=bs_crit, ...
+                                smooth_span=smooth_span, ...
+                                evntsMask=prof_t_evnts_m, numOfFitIter=400);
+
+                        profileAnalysis.fitCoefSparkRise = evntRiseFits.coef;
+                        profileAnalysis.h_FitLine = evntRiseFits.h_line;
+                        profileAnalysis.detectedEventsMask = evntRiseFits.detectedEventsMask;
+                        profileAnalysis.startOfSpark = evntRiseFits.startOfEvent;
+                        profileAnalysis.endOfSpark = evntRiseFits.endOfEvent;
                         profileAnalysis.h_PeaksCirc = h_circ_n;
                         profileAnalysis.posOfEvents = num2cell(posOfPeaks_n);
                         

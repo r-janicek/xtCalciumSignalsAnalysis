@@ -200,9 +200,10 @@ if exist('pks','var')
                 'ButtonDownFcn',{@profileROIButtonDownFcn,mainFig});
         end
         % fit sparks and plot results
-        [h_line, detectedEventsMask, coef, ~, startOfSpark, endOfSpark] = ...
-            fitSparkRise(pxSzT, t, prof_t, pks, locs, ax_prof, ...
-            [], 1e-3, 400, smooth_span, bs_crit, [], [], prof_t_evnts_m);
+        evntRiseFits = fitEventRise(t, prof_t, "local", ...
+            peaks_vals=pks, peaks_locs=locs, ...
+            ax_prof=ax_prof, bs_crit=bs_crit, smooth_span=smooth_span, ...
+            evntsMask=prof_t_evnts_m, numOfFitIter=400);
     end
 end
 
@@ -226,11 +227,11 @@ if exist('h_circ','var') && ~isempty(h_circ)
     profileAnalysis.h_PeaksCirc = h_circ;
     profileAnalysis.posOfEvents = num2cell([pks,locs']);
     profileAnalysis.statEventsSpRec = statEvents;
-    profileAnalysis.fitCoefSparkRise = coef;
-    profileAnalysis.startOfSpark = startOfSpark;
-    profileAnalysis.endOfSpark = endOfSpark;
-    profileAnalysis.h_FitLine = h_line;
-    profileAnalysis.detectedEventsMask = detectedEventsMask;
+    profileAnalysis.fitCoefSparkRise = evntRiseFits.coef;
+    profileAnalysis.startOfSpark = evntRiseFits.startOfEvent;
+    profileAnalysis.endOfSpark = evntRiseFits.endOfEvent;
+    profileAnalysis.h_FitLine = evntRiseFits.h_line;
+    profileAnalysis.detectedEventsMask = evntRiseFits.detectedEventsMask;
     profileAnalysis.peaksCircleSz = cSz;
 
 else

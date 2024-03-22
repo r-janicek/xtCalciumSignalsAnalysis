@@ -1,6 +1,6 @@
 function outFitEvent = fitEventProfile(t, y, ...
     analysisFig, axFit, axRes, tauD_regionWise, waveSpeed)
-
+keyboard
 % ax = axes to plot 
 hObjsA = getappdata(analysisFig,'hObjsA');
 N_events = str2double(hObjsA.h_edit_Npeaks.String);

@@ -47,7 +47,6 @@ switch selectedEvent.type
     % t-profile
     deskewedWaveProf = selectedEvent.deskewdEvent.deskewedImg_tProf;
     
-    
     % get exp decay tau based on different amplitude regions in wave
     [~,maxTprof]= max(deskewedWaveProf);
 

@@ -1,5 +1,6 @@
 function [FD, prcOfAmpl_val, pos_t_1, pos_t_2, pos_1, pos_2] = ...
-    fullDurationCalc(t, t_prof, sE, eE, peakVal, peakPos, bs, prcOfAmpl)
+    fullDurationCalc(t, t_prof, sE, eE, peakVal, peakPos, bs, prcOfAmpl, ...
+                     evntMask)
 % calculate full duration at specified percentage of amplitude of event
 % half maximum value
 % t = time
@@ -8,6 +9,7 @@ function [FD, prcOfAmpl_val, pos_t_1, pos_t_2, pos_1, pos_2] = ...
 % peakVal, peakPos, bs = values of peak and baseline
 % prcOfAmpl = percentage of amplitude of event where to calculate full
 % duration
+% eM = mask of event
 t_indx = (1:1:numel(t));
 t_indx = t_indx(:);
 
@@ -35,18 +37,23 @@ eE = max(eE, p_prcOfAmpl_afterPeak);
 
 if sE>1
     y_t1 = [ -inf(sE-1,1); t_prof(sE:peakPos-1) ];
+    evntMask_1 = [ false(sE-1,1); evntMask(sE:peakPos-1) ];
 else
     y_t1 = t_prof(1:peakPos-1);
+    evntMask_1 = evntMask(1:peakPos-1);
 end
 y_t2 = [ -inf(peakPos-1,1); t_prof(peakPos:eE) ];
+evntMask_2 = [ false(peakPos-1,1); evntMask(peakPos:eE) ];
 
 % find the first position of desired percentage of amplitude
 y_t1_r = flipud(y_t1);
+evntMask_1_r = flipud(evntMask_1);
 d_y_t1 = gradient(y_t1_r);
 if all(d_y_t1==0) || all(isnan(d_y_t1))
     pos_1 = numel(d_y_t1);
 else
-    indDer1 = find( d_y_t1<=0 & y_t1_r<prcOfAmpl_val, 1, 'first')+1;
+    indDer1 = find( (d_y_t1<=0 | evntMask_1_r) & y_t1_r<prcOfAmpl_val, ...
+        1, 'first')+1;
     if indDer1 > numel(y_t1_r), indDer1 = numel(y_t1_r); end
     if ~isempty(indDer1), y_t1_r(indDer1:end) = -inf; end
     y_t1 = flipud(y_t1_r);
@@ -59,7 +66,7 @@ end
 
 % find the second position of desired percentage of amplitude
 d_y_t2 = gradient(y_t2);
-indDer2 = find( d_y_t2<0 & y_t2<prcOfAmpl_val & t_indx(1:eE)>peakPos, ...
+indDer2 = find( (d_y_t2<0 | evntMask_2) & y_t2<prcOfAmpl_val & t_indx(1:eE)>peakPos, ...
     1, 'first')+1;
 if indDer2 > numel(y_t2), indDer2 = numel(y_t2); end
 if ~isempty(indDer2), y_t2(indDer2:end) = -inf; end

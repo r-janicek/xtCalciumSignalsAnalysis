@@ -118,8 +118,8 @@ for i = 1:height(selectedROIs)
     
     % recalculate time positions in calcParamsFromFit, so they are starting
     % from the beginning of image (cropped)
-    calcParamsFromFit(2:end,[1,3,4,5,13]) = ...
-        num2cell(cell2mat(calcParamsFromFit(2:end,[1,3,4,5,13])) + posOfROIs(1));
+    calcParamsFromFit(2:end,[1,3,4,5,15]) = ...
+        num2cell(cell2mat(calcParamsFromFit(2:end,[1,3,4,5,15])) + posOfROIs(1));
     
     % create results array
     if exist('result','var')
@@ -168,6 +168,7 @@ imgSize = [{'image size x (um)',imgSzX};{'image size t (ms)',imgSzT}];
 imgSize_px = [{'image size x (pixels)',imgSzPx(1)};{'image size t (pixels)',imgSzPx(2)}];
 
 blank = {'blank:',imgData.blank};
+
 
 %% save electrophysiology data, only when data preview is used
 if isfield(getappdata(mainFig),'electroPhys')
@@ -243,6 +244,13 @@ if hObjs.check_saveProfsAndFits.Value
     writecell(allProfilesData, path_xls, 'Sheet','profilesOfEvents');    
 end
 
+% save temperature recorded during experiment
+if hObjs.check_addTemperature.Value
+    % check if exists
+    if isfield(imgData, 'tempData_img')
+        writetable(imgData.tempData_img, path_xls, 'Sheet','temperature');
+    end 
+end
 % save current ...
 if exist('electro','var')
     writecell(electro, path_xls, 'Sheet','electroPhys');
@@ -334,6 +342,27 @@ if isfield(getappdata(mainFig),'electroPhys')
     ylabel('x (pixels)')
  
 else
+    % add temperature recorded during experiment
+    if hObjs.check_addTemperature.Value
+        % check if exists
+        if isfield(imgData, 'tempData_img')
+            temp_ax = axes('Parent',whImg_fig_final, ...
+                'Units','normalized', ...
+                'Position',[0.04 0.795 0.94 0.13]);
+            plot(imgData.tempData_img.time, ...
+                imgData.tempData_img.temperature, ...
+                'Parent',temp_ax, 'Color','b', ...
+                'LineWidth',2);
+            ylabel(temp_ax, 'temperature (\circC)', 'FontSize',14)
+            set(temp_ax, 'FontSize',14)
+            set(temp_ax, 'XTick',[], ...
+                'XLim',[min(imgData.tempData_img.time) ...
+                        max(imgData.tempData_img.time)],...
+                'YLim',[floor(min(imgData.tempData_img.temperature)) ...
+                        ceil(max(imgData.tempData_img.temperature))])
+        end
+    end
+    
     whImg_ax = axes('Parent',whImg_fig_final, 'Units','normalized', ...
         'Position',[0.04 0.55 0.94 0.22]);
     image(whImg, 'CDataMapping','scaled', 'Parent',whImg_ax, ...

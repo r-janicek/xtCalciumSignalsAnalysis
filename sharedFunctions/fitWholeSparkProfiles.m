@@ -12,7 +12,7 @@ function out = fitWholeSparkProfiles(p0,x,x_ups,y,piecewise,model,peakData,t0est
 % 3. EMG (exponentially modified gaussian)
 % peakData = position of peak == optional
 % t0est = estimate of t0, use in case fitting without piecewise
-
+keyboard
 % data
 x = x(:);
 y = y(:);

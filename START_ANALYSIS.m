@@ -46,6 +46,7 @@ addpath(wd_path) % do not include subfolders
 % add path of folders containing functions for loading image
 addpath(fullfile(wd_path,'OME_bioformats'))
 addpath(fullfile(wd_path,'sharedFunctions'))
+addpath(fullfile(wd_path,'Igor2Matlab'))
 
 if exist("mainFig", "var")
     % panel for choose analysis

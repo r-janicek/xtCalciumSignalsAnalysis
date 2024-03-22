@@ -18,7 +18,6 @@ imgE = img(rows_e,cols_e);
 imgMask = false(size(img));
 % mask of event in rectangle image of event
 imgMask(rows_e,cols_e) = statEvent.Image;
-
 % try to update WeightedCentroid position
 % there should be only one event of interenst in imgE mask
 % do treshold 90th percentile, create mask and do AND operation with
@@ -82,29 +81,31 @@ if (c_m-(n_px_x-1)/2 <= 0) || (c_m+(n_px_x-1)/2 > size(imgE,2))
     n_px_x = min(2*c_m-1, abs(2*(size(imgE,2)-c_m)-1));
 end
 
+% position of middle of spark in whole image
+r_m_whImg = rows_e(1)-1+r_m;
+% time axis of image
+t_whImg = (1:1:size(img,2)).*pxSzT - pxSzT;
+% try to expand area around spark in t direction, fit the rising part
+% of spark, same as in spark recovery analysis
+t_spark_prof_whImg = mean( ...
+    img(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
+t_spark_prof_whImg = t_spark_prof_whImg(:);
+t_whImg_evnt_m = false(size(t_whImg));
+t_whImg_evnt_m(cols_e) = true;
 % check if isempty startOfEvent, try to estimate it
 if isempty(startOfEvent)
-    % position of middle of spark in whole image
-    r_m_whImg = rows_e(1)-1+r_m;
-    % time axis of image
-    t_whImg = (1:1:size(img,2)).*pxSzT - pxSzT;
-    
-    % try to expand area around spark in t direction, fit the rising part
-    % of spark, same as in spark recovery analysis
-    t_spark_prof_whImg = mean( ...
-        img(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
-    t_spark_prof_whImg = t_spark_prof_whImg(:);
     % fit only rise of spark fun(t0,tR,A,y0)
     locs = t_whImg(cols_e(1)-1+c_m);
     pks = t_spark_prof_whImg(cols_e(1)-1+c_m);
-    t_whImg_evnt_m = false(size(t_whImg));
-    t_whImg_evnt_m(cols_e) = true;
     if isempty(prevFitCoef)
-        try
-            [~,~,prevFitCoef,~,startOfEvent,endOfEvent] = ...
-                fitSparkRise(pxSzT, t_whImg,...
-                t_spark_prof_whImg, pks, locs, [], [], 1e-9,1000,...
-                smoothSpan, bsDetSensitivity, [], [], t_whImg_evnt_m);
+        try    
+            evntRiseFit = fitEventRise(t_whImg, t_spark_prof_whImg, ...
+                "local", peaks_vals=pks, peaks_locs=locs, ...
+                smooth_span=smoothSpan, bs_crit=bsDetSensitivity, ...
+                evntsMask=t_whImg_evnt_m);
+            prevFitCoef = evntRiseFit.coef;
+            startOfEvent = evntRiseFit.startOfEvent;
+            endOfEvent = evntRiseFit.endOfEvent;
         catch
             prevFitCoef = [];
             startOfEvent = cols_e(1);
@@ -163,6 +164,8 @@ end
 
 % adjusted event area data
 imgE = img(rows_e,cols_e); 
+
+
 %imgEm = imgMask(rows_e,cols_e);
 imgE_subRegion_m = false(size(imgMask));
 imgE_subRegion_m(statOfSubRegions(p).SubarrayIdx{1} + rows_e(1) - 1 + dc_x, ...
@@ -184,6 +187,9 @@ try
     imgE_s(~imgEm) = nan;
     % get position of centre of expanded event
     [r_m, ~] = find(imgE_s==max(imgE_s,[],'all','omitmissing') );
+    if (r_m-(n_px_t-1)/2 <= 0) || (r_m+(n_px_t-1)/2 > size(imgE_s,1))
+        n_px_t = min(2*r_m-1, abs(2*(size(imgE_s,1)-r_m)-1));
+    end
     prof_t_imgE_s = mean(imgE_s(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), ...
         1, "omitmissing");
     %[r_m,c_m] = find(imgE_s==max(imgE_s(:)));

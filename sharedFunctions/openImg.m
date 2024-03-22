@@ -105,6 +105,13 @@ try
     catch
         scanMode = [];
     end
+    % get image capture date
+    imgCaptureDate_m = strcmp(metaData(:,1), ...
+        'Global [Acquisition Parameters Common] ImageCaputreDate');
+    % date and time of image acquisition
+    imgCaptureDate = metaData{imgCaptureDate_m, 2};
+    imgCaptureDate = datetime(strrep(imgCaptureDate,"'",''), ...
+        'InputFormat','yyyy-MM-dd HH:mm:ss');
     % create metadata structure
     try
         for i = 1:size(metaData,1)
@@ -328,7 +335,8 @@ imgData = struct('filePath',filePath,...
                  'z_min_img',z_min_img,...
                  'scanLinePos',pos_l,...
                  'microscopeVer',microscopeVer,...
-                 'userName',userName);
+                 'userName',userName, ...
+                 'imgCaptureDate',imgCaptureDate);
 % save image data in gui data
 setappdata(mainFig,'imgData',imgData)
 % set up main window

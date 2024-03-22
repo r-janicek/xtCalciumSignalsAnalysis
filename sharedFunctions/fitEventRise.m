@@ -1,221 +1,256 @@
-function [h_line,coef,sp_fit,startOfSpark] = fitEventRise(...
-    pxSzT,x_t,prof_t,prof_s,pks,locs,ax_prof,coefPrevFit,tol,iter,...
-    smooth_span,bs_crit,posOfSelPoints)
-
-options = optimoptions('lsqnonlin','TolFun',tol,'TolX',tol,'MaxIter',iter,...
-    'MaxFunEvals',3*iter,'Display','off');
-
-fun_e = @(x,t) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
-        (t<x(1)).*(x(4)));
-    
-fun = @(x,t,ys) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
-         (t<x(1)).*(x(4)))-ys;
-
-if ~isempty(posOfSelPoints)
-    pks = posOfSelPoints.peakFitVal;
-    locs = x_t(posOfSelPoints.peakFitPos);
+function out = fitEventRise(t, prof_t, eventType, options)
+%{
+parameters of function
+t = time vector
+prof_t = time profile
+eventType = type of event, global or local
+options:
+    peaks_vals = peaks values
+    peaks_locs = peaks positions, in time units 
+    ax_prof = handle to axes with time profile
+    coefPrevFit = coeficients from previous fit
+    fitTol = fit tolerance
+    numOfFitIter = number of iterations
+    smooth_span = smoothing span prameter
+    bs_crit = baseline percentile treshold
+    sSpPrev = 
+    eSpPrev = 
+    evntsMask = mask of events in profile ...
+    posOfSelPoints = 
+    fitFun = expRise or sigmoid
+%}
+arguments
+    t (:,1) {mustBeNumeric}            
+    prof_t (:,1) {mustBeNumeric}             
+    eventType (1,1) {mustBeText, ...
+        mustBeMember(eventType,{'global','local'})} 
+    options.peaks_vals (:,1) {mustBeNumeric} = nan 
+    options.peaks_locs (:,1) {mustBeNumeric} = nan
+    options.ax_prof = []
+    options.coefPrevFit = []
+    options.fitTol = 1e-9
+    options.numOfFitIter (1,1) {mustBeInteger, mustBePositive} = 1000
+    options.smooth_span (1,1) {mustBeInteger, mustBePositive} = 50 % ms
+    options.bs_crit (1,1) {mustBeInteger, mustBePositive, ...
+        mustBeLessThan(options.bs_crit,100)} = 75 
+    options.sSpPrev = []
+    options.eSpPrev = []
+    options.evntsMask (:,1) logical = true(size(t))
+    options.posOfSelPoints = []
+    options.fitFun (1,1) {mustBeText, ...
+        mustBeMember(options.fitFun,{'expRise','sigmoid'})} = "expRise"
+    options.fittedLineColor (:,3) {mustBeNumeric} = [1 0 0]
+    options.fittedLineTag (1,1) {mustBeText} = ""
 end
 
-h_line = zeros(length(pks),1);
-coef = zeros(length(pks),4); 
-sp_fit = {zeros(length(pks),1)};
-startOfSpark = zeros(length(pks),1); 
-prof_s = prof_s(:);
+% get time step from time vector
+pxSzT = mean(diff(t));
+if any(isnan(options.peaks_vals)) || any(isnan(options.peaks_locs))
+    [options.peaks_vals, options.peaks_locs] = max(prof_t);
+    options.peaks_locs = t(options.peaks_locs);
+end
+% it peaks were selected
+if ~isempty(options.posOfSelPoints)
+    options.peaks_vals = options.posOfSelPoints.peakFitVal;
+    options.peaks_locs = t(options.posOfSelPoints.peakFitPos);
+end
+% fit options
+fitOpts = optimoptions('lsqnonlin', 'TolFun',options.fitTol, ...
+    'TolX',options.fitTol, 'MaxIter',options.numOfFitIter,...
+    'MaxFunEvals',3*options.numOfFitIter, 'Display','off');
+switch options.fitFun
+    case 'expRise'
+        % parameters [t0 tauR A bs]
+        fun_e = @(x,t) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
+            (t<x(1)).*(x(4)));
+        fun = @(x,t,ys) ((t>=x(1)).*((1-exp(-(t-x(1))./x(2))).*(x(3)) + x(4)) + ...
+            (t<x(1)).*(x(4)))-ys;
+        n_coef = 4;
+    case 'sigmoid'
+        % parameters [bs A m tau] (baseline, amplitude, middle point, time constant)
+        fun_e = @(x,t)   x(1) + (x(2)-x(1))./(1+exp(-(t-x(3))./x(4)));
+        fun = @(x,t,ys) (x(1) + (x(2)-x(1))./(1+exp(-(t-x(3))./x(4))))-ys;
+        n_coef = 4;
+end
 
-maxDurOfBaseline = round(500/pxSzT); % maximum duration of baseline in points
+% preallocate
+out.model = options.fitFun;
+out.fitFun = fun_e;
+out.h_line = zeros(length(options.peaks_vals),1);
+out.coef = zeros(length(options.peaks_vals),n_coef);
+out.sp_fit = {zeros(length(options.peaks_vals),1)};
+out.startOfEvent = zeros(length(options.peaks_vals),1); 
+out.endOfEvent = zeros(length(options.peaks_vals),1);
+out.detectedEventsMask = false(numel(prof_t),1);
+% maximum duration of baseline in points
+switch eventType
+    case 'global'
+        maxDurOfBaseline = ceil(500/pxSzT);
+    case 'local'
+        maxDurOfBaseline = ceil(100/pxSzT);
+end
 
-% smooth profile for difference analysis, loess with defined duration in ms  
-%prof_s = smooth(prof_t,3);
-% n_pts = round(smooth_span/pxSzT);
-% prof_s = smooth(prof_t,n_pts/length(prof_t),'loess');
-
-bs_crit = round(bs_crit);
-
-%remove baseline, only events bigger than specified percentile stay
-percentl = prctile(prof_s,[25 50 100-bs_crit]);
-%iqr = percentl(3)- percentl(1);
-trsh = percentl(3); % threshold
-
-prof_s(prof_s < trsh) = trsh;
-
-% location of peaks in points
-[~, locsPx] = min(abs(x_t'-locs)); % using expansion of minus to matrix, not working with old versions of matlab
-
-prof_s_d = diff(prof_s);
-prof_s_d = [0;prof_s_d];
-
-% %find peaks of derivation of profile
-% [vals_d_pos,locs_d_pos] = findpeaks(prof_s_d,x_t);
-
-% look for positive peaks of derivation 20 ms around peak of spark
-% d = 100;
-
-if ~isempty(pks)
-    
-    for i=1:length(pks)
-        
-        %first try to find start position of baseline of spark with derivation
-        try
-            % take part of profile derivation
-            testProfDer = zeros(size(prof_s_d));
-            if i==1
-                testProfDer(1:locsPx(i)) = prof_s_d(1:locsPx(i));
-            else
-                testProfDer(locsPx(i-1):locsPx(i)) = prof_s_d(locsPx(i-1):locsPx(i));
-            end
-            
-            [~,pm] = max(testProfDer);
-            
-            % flip it
-            testProfDer = flipud(testProfDer);
-            [~,pmFl] = max(testProfDer);
-            
-            % find first negative derivation
-            p_d_neg = find(testProfDer(pmFl:end)<0,1,'first');
-            
-            % corrected position for not flipped max
-            p_d_neg = pm-p_d_neg;
-            
-            if isempty(p_d_neg)
-                p_d_neg = 1;
-            end
-            
-            pos_s = locsPx(i) - maxDurOfBaseline;
-            
-            if pos_s <= 0
-                pos_s = 1;
-            end
-            
-            if ~isempty(p_d_neg) && (p_d_neg > pos_s) && (p_d_neg<locsPx(i))
-                pos_s = p_d_neg+1;
-            end
-            
-           
-            % if there is problem, use old approach
-        catch
-            
-            if i==1
-                
-                [~,pos_m1] = min(abs(x_t-locs(i)));
-                pos_s = pos_m1 - maxDurOfBaseline;
-                
-                if pos_s <= 0
-                    pos_s = 1;
-                end
-                
-            else
-                
-                [~,pos_m1] = min(abs(x_t-locs(i-1)));
-                [~,pos_m2] = min(abs(x_t-locs(i)));
-                % baseline of spark start in the middle between two  sparks
-                dist12 = round((pos_m2 - pos_m1)*0.5);
-                
-                if dist12 > maxDurOfBaseline
-                    dist12 = maxDurOfBaseline;
-                    
-                elseif dist12 < 5
-                    dist12=5;
-                end
-                
-                pos_s = pos_m2 - dist12;
-                
-            end
-            
-        end
-        
-        [~,pos_e] = min(abs(x_t-locs(i)));
-        
-        if ~isempty(posOfSelPoints)
-            pos_s = posOfSelPoints.bsFitS;
-            pos_e = posOfSelPoints.peakFitPos;
-        end
-        
-        ys = prof_t(pos_s:pos_e);
-        t = x_t(pos_s:pos_e);
-         
-        if length(ys)<size(coef,2)
-            ys = prof_t(pos_s:pos_e + (size(coef,2)-length(ys)));
-            t = x_t(pos_s:pos_e + (size(coef,2)-length(t)));
-        end
-        
-        t = t(:);
-        ys = ys(:);
-        
-        % estimate initial fit parameters
-        % t0,tR,A,y0
-        if ~isempty(coefPrevFit)
-            x0 = coefPrevFit(i,:);
+% use previous starts and ends of sparks if any, otherwise find them
+if ~isempty(options.peaks_vals)
+    % analyze and fit all peaks of events
+    for i = 1:numel(options.peaks_locs)
+        % get position of peak of events in pixels
+        [~, peak_loc_px] = min(abs(t-options.peaks_locs(i)));
+        if isempty(options.sSpPrev) && isempty(options.eSpPrev)
+            % find new start and end of event with baseline
+            [pos_s, pos_e] = estimateStartAndEndOfEvent( ...
+                prof_t, peak_loc_px, ...
+                maxDurOfBaseline=maxDurOfBaseline, ...
+                evntsMask=options.evntsMask, ...
+                equalBaselineDur=false, ...
+                smoothSpan=round(options.smooth_span/pxSzT), ...
+                evntAcceptCrit=options.bs_crit);
         else
-            A = pks(i);
-            y0 = prctile(ys,10);
-            
-            % estimate t0
-            lastNegBs = find(ys-y0<0,1,'last');
-            if lastNegBs >= numel(ys)
-                lastNegBs = lastNegBs-1;
-            end
-            if lastNegBs < 1
-                lastNegBs = 1;
-            end
-            if isempty(lastNegBs)
-                lastNegBs = 1;
-            end
-            [~,maxInYs] = max(ys(lastNegBs:end));
-           
-            % find 25 and 75% from max in interval (lastNegBs:end)
-            ysRisePart = ys(lastNegBs:lastNegBs+maxInYs-1);
-            [~,p_75] = min( abs(ysRisePart-max(ysRisePart).*0.75) );
-            [~,p_25] = min( abs(ysRisePart-max(ysRisePart).*0.25) ); 
-            if p_75 == p_25
-                p_25 = p_75-1;
-            end
-            p_25 = p_25+lastNegBs;
-            p_75 = p_75+lastNegBs;
-       
-            v_75 = ys(p_75);
-            v_25 = ys(p_25);
-      
-            % construct line two-point form and get x at y=0
-            t0_ind_est = round( p_25 + ( (0-v_25)*(p_75-p_25) ) / (v_75-v_25) );
-            tR_est = t(p_75)-t(p_25);
-            if t0_ind_est<1, t0_ind_est=1; end
-            if t0_ind_est>numel(t), t0_ind_est = numel(t); end
-            if tR_est<1, tR_est=5; end
-            
-            % t0,tR,A,y0
-            x0 = [t(t0_ind_est) tR_est A y0];
-        end
-
-        if ~isempty(posOfSelPoints)
-            % t0,tR,A,y0
-            x0(4) = mean(ys(1:posOfSelPoints.bsFitE-pos_s+1));
-            % lower and upper bounds
-            lb_fit = [zeros(1,3),x0(4)];
-            ub_fit = [ones(1,3).*inf,x0(4)];
-        else
-            % lower and upper bounds
-            lb_fit = [zeros(1,3),min(ys)];
-            ub_fit = ones(1,4).*inf;
+            % take provided ones
+            pos_s = options.sSpPrev(i);
+            pos_e = options.eSpPrev(i);
         end
         
+        % get rise part of profile of event 
+        y_rise = prof_t(pos_s:peak_loc_px);
+        t_rise = t(pos_s:peak_loc_px);
+        % check if there is enough points to fit the profile with model
+        if length(y_rise)<size(out.coef,2)
+            y_rise = prof_t(pos_s:peak_loc_px + (size(out.coef,2)-length(y_rise)));
+            t_rise = t(pos_s:peak_loc_px + (size(out.coef,2)-length(t_rise)));
+        end
+        t_rise = t_rise(:);
+        y_rise = y_rise(:);
+
+        % get initial parameters to fit profile
+        if ~isempty(options.coefPrevFit) && ...
+                size(options.coefPrevFit,2) == n_coef
+            x0 = options.coefPrevFit(i,:);
+        else
+            % estimation of initial fit values
+            A = options.peaks_vals(i);
+            % first estimation of baseline
+            try
+                bsFirstEstPx = ...
+                    find(~options.evntsMask(1:peak_loc_px), 1, 'last') - ...
+                    pos_s + 1;
+            catch 
+                bsFirstEstPx = 3;
+            end
+            % use first 3 points of profile, if there is a problem or no
+            % mask of events
+            if isempty(bsFirstEstPx), bsFirstEstPx = 3; end
+            if bsFirstEstPx <= 0, bsFirstEstPx = 3; end
+            y0 = mean(y_rise(1:bsFirstEstPx));
+            try
+                % estimate t0
+                % find 10 and 90% from max of rise part
+                p_90 = numel(y_rise) - ...
+                    find( (flipud(y_rise)-(y0 + (max(y_rise)-y0).*0.90))>0, 1, 'last') + 1;
+                p_10 = numel(y_rise) - ...
+                    find( (flipud(y_rise)-(y0 + (max(y_rise)-y0).*0.10))<0, 1, 'first') + 1;
+                %[~,p_75] = min( abs( ys-(y0 + (max(ys)-y0).*0.75) ) );
+                %[~,p_25] = min( abs( ys-(y0 + (max(ys)-y0).*0.25) ) );
+                if p_90 == p_10
+                    p_10 = p_90-1;
+                end
+                v_90 = y_rise(p_90);
+                v_10 = y_rise(p_10);
+                % construct line two-point form and get x at y=y0
+                t0_est = t_rise(p_10)+( (y0-v_10)*(t_rise(p_90)-t_rise(p_10)) )/(v_90-v_10);
+                tR_est = t_rise(p_90)-t_rise(p_10);
+                if tR_est<mean(diff(t_rise)), tR_est = 3; end
+                if t0_est<t_rise(1), t0_est = t_rise(1); end
+            catch
+                t0_est = options.peaks_locs(i)-10;
+                if t0_est<=0, t0_est = mean(diff(t_rise)); end
+                tR_est = 3;
+            end
+            switch options.fitFun
+                case 'expRise'
+                    % parameters [t0, tR, A, y0]
+                    x0 = [t0_est tR_est A-y0 y0];
+                case 'sigmoid'
+                    % parameters [bs A m tau]
+                    x0 = [y0 A t0_est+(peaks_locs(i)-t0_est)/2 tR_est];
+            end
+        end
+        % parameters bounds
+        switch options.fitFun
+            case 'expRise'
+                % t0, tR, A, y0
+                lb = [min(t_rise) 0 min(y_rise) min(y_rise)];
+                ub = [max(t_rise) max(t_rise)-min(t_rise) max(y_rise)-min(y_rise) max(y_rise)];
+                % lock baseline on selected interval
+                if ~isempty(options.posOfSelPoints)
+                    selected_bs_val = mean( ...
+                        prof_t(options.posOfSelPoints.bsFitS: ...
+                               options.posOfSelPoints.bsFitE));
+                    x0(4) = selected_bs_val;
+                    lb(4) = selected_bs_val;
+                    ub(4) = selected_bs_val;
+                end
+            case 'sigmoid'
+                % parameters [bs A m tau]
+                lb = [min(y_rise) min(y_rise) min(t_rise) 10^(-9)];
+                ub = [max(y_rise) max(y_rise) max(t_rise) inf];
+        end
         % fit
         try
-            x = lsqnonlin(@(x)fun(x,t,ys),x0,lb_fit,ub_fit,options);
+            x = lsqnonlin(@(x) fun(x,t_rise,y_rise), x0, lb, ub, fitOpts);
         catch
-            x = x0;
+            try
+                sumSqrs = @(x,t,ys) sum(fun(x,t,ys).^2);
+                x = fmincon(@(x) sumSqrs(x,t_rise,y_rise), x0, ...
+                    [], [], [], [], lb, ub);
+            catch
+                x = x0;
+            end
         end
-        
-        coef(i,:) = x;
-        sp_fit(i,1) = {[t,fun_e(x,t)]};
-        startOfSpark(i,1) = pos_s; % in pixels
-        
-        if ~isempty(ax_prof)
-            h_line(i,1) = line(t,fun_e(x,t),'Parent',ax_prof,'Color',[0.2 1 0.2],'LineStyle','-','LineWidth',2,'Tag','fitLineRise');
+        % estimate t0 if fit fun was sigmoidal
+        switch options.fitFun
+            case 'expRise'
+            case 'sigmoid'
+                % tangent line at middle point of sigmoid
+                fun_line = @(x,t) ((x(2)-x(1))/(4*x(4))).*t + ...
+                    (fun_e(x,x(3))-(((x(2)-x(1))/(4*x(4))).*x(3)));
+                t0 = -(fun_e(x,x(3))-(((x(2)-x(1))/(4*x(4))).*x(3))) / ...
+                    ((x(2)-x(1))/(4*x(4)));
         end
-        
-    end
-end
 
+        % figure
+        % plot(t,ys,'ok')
+        % hold on
+        % plot(t,fun_e(x0,t),'b')
+        % plot(t,fun_e(x,t),'r')
+        % %t_ups = linspace(t(1),t(end),1000);
+        % %plot(t_ups,fun_e(x,t_ups),'c')
+        % 
+        % %plot(t(t>t0_est),fun_line(x,t(t>t0_est)),'m')
+        
+        % save results 
+        out.coef(i,:) = x;
+        out.sp_fit(i,1) = {[t_rise,fun_e(x,t_rise)]};
+        out.startOfEvent(i,1) = pos_s; % in pixels
+        out.endOfEvent(i,1) = pos_e; % in pixels
+        
+        if ~isempty(options.ax_prof)
+            out.h_line(i,1) = line(t_rise, fun_e(x,t_rise), ...
+                'Parent',options.ax_prof, ...
+                'Color',options.fittedLineColor, ...
+                'LineStyle','-', ...
+                'LineWidth',2, ...
+                'Tag',options.fittedLineTag);   
+            
+            out.detectedEventsMask(pos_s:pos_e,1) = true(pos_e-pos_s+1,1);
+        end
+    end
+    
+%     hl_m = line(x_t(detectedEventsMask),prof_t(detectedEventsMask),'Parent',ax_prof,'Color','g',...
+%                     'LineStyle','none','Marker','.','MarkerSize',20,'LineWidth',1,'Tag','eventsMask');
+%     uistack(hl_m, 'bottom')
+
+end
 end
 
 
