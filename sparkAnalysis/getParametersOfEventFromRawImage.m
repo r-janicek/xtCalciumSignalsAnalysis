@@ -164,16 +164,20 @@ end
 tauD = p_tauD * imgData.pxSzT;
 
 % output
+percRise = [10, 90];
+
 params.amplitude = eventAmpl;
 params.TTP = TTP;
-params.TTP_line25_75 = TTP;
+params.(matlab.lang.makeValidName( ...
+    sprintf('TTP_lineFit_%d_%d',percRise(1),percRise(2)))) = TTP;
 params.FDHM = FDHM;
 params.FWHM = FWHM;
 params.sparkMass = sparkMass;
 params.tauD = tauD;
 params.bs = bs;
 params.t0 = t0;
-params.t0_line25_75 = t0;
+params.(matlab.lang.makeValidName( ...
+    sprintf('t0_lineFit_%d_%d',percRise(1),percRise(2)))) = t0;
 params.t_max = t(c_m);
 params.v_max = t_prof_s(c_m);
 

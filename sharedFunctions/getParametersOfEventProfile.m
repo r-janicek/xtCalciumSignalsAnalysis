@@ -72,7 +72,7 @@ if ~isempty(t_prof)
         [FDHM, half_max_t, half_max_t_1, half_max_t_2] = ...
             fullDurationCalc(t, t_prof, sE, eE, val_t, pos_t, bs_t, 50, tProf_m);
         % get positions at defined percentiles (part of event rise fitted by line)
-        percRise = [10,90];
+        percRise = [10, 90];
         [~, ~, ~, ~, pos_percRise_1, ~] = fullDurationCalc( ...
             t, t_prof, sE, eE, val_t, pos_t, bs_t, percRise(1), tProf_m);
         [~, ~, ~, ~, pos_percRise_2, ~] = fullDurationCalc( ...
@@ -98,6 +98,7 @@ if ~isempty(t_prof)
     if pos_percRise_1 == pos_percRise_2
         pos_percRise_1 = pos_percRise_1 - 1;
     end
+
     try
         f_line_percRise = fit( ...
             t(pos_percRise_1:pos_percRise_2), ...
@@ -177,14 +178,18 @@ sparkMass = Ampl*1.206*FWHM^3;
 
 eventParams.amplitude = Ampl;
 eventParams.TTP = TTP;
-eventParams.TTP_fittedLine = TTP_fittedLine;
+eventParams.(matlab.lang.makeValidName( ...
+    sprintf('TTP_lineFit_%d_%d',percRise(1),percRise(2)))) = TTP_fittedLine;
+%eventParams.TTP_fittedLine = TTP_fittedLine;
 eventParams.FDHM = FDHM;
 eventParams.FWHM = FWHM;
 eventParams.sparkMass = sparkMass;
 eventParams.bs_t = bs_t;
 eventParams.bs_x = bs_x;
 eventParams.t0 = t0;
-eventParams.t0_fittedLine = t0_fittedLine;
+eventParams.(matlab.lang.makeValidName( ...
+    sprintf('t0_lineFit_%d_%d',percRise(1),percRise(2)))) = t0_fittedLine;
+%eventParams.t0_fittedLine = t0_fittedLine;
 eventParams.t_max = t(pos_t);
 eventParams.v_max = val_t;
 eventParams.half_max_t = half_max_t;

@@ -144,15 +144,21 @@ if ~isempty(statSparks)
                             imgData, normImgFlag);
                     end
                     % save parameters
-                    eP_2Dfit_fiedN = fieldnames(eP_2Dfit);
+eP_2Dfit_fiedN = fieldnames(eP_2Dfit);
+
+                    eventParams.(eP_profs_fiedN{contains(eP_profs_fiedN, 't0_lineFit_')})(i,1) = ...
+                        eP_profs.(eP_profs_fiedN{contains(eP_profs_fiedN, 't0_lineFit_')}) ...
+                        + eventROIstart_t;
+                    eventParams.(eP_profs_fiedN{contains(eP_profs_fiedN, 'TTP_lineFit_')})(i,1) = ...
+                        eP_profs.(eP_profs_fiedN{contains(eP_profs_fiedN, 'TTP_lineFit_')});
+                    
+
+                    
                     eventParams.calcMethod{i,1} = calcMethod;
                     eventParams.amplitude(i,1) = eP_2Dfit.amplitude;
                     eventParams.t0(i,1) = eP_2Dfit.t0 + eventROIstart_t;
-                    eventParams.(eP_2Dfit_fiedN{contains(eP_2Dfit_fiedN, 't0_lineFit_')})(i,1) = ...
-                        eP_2Dfit.(eP_2Dfit_fiedN{contains(eP_2Dfit_fiedN, 't0_lineFit_')}) ...
-                        + eventROIstart_t;
-                    eventParams.(eP_2Dfit_fiedN{contains(eP_2Dfit_fiedN, 'TTP_lineFit_')})(i,1) = ...
-                        eP_2Dfit.(eP_2Dfit_fiedN{contains(eP_2Dfit_fiedN, 'TTP_lineFit_')});
+                    eventParams.t0_fittedLine(i,1) = eP_2Dfit.t0_fittedLine + eventROIstart_t;
+                    eventParams.TTP_fittedLine(i,1) = eP_2Dfit.TTP_fittedLine;
                     eventParams.TTP(i,1) = eP_2Dfit.TTP;
                     eventParams.FDHM(i,1) = eP_2Dfit.FDHM;
                     eventParams.FWHM(i,1) = eP_2Dfit.FWHM;

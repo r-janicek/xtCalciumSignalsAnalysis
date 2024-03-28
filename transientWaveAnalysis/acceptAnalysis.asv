@@ -28,7 +28,7 @@ set(hf, 'PaperPositionMode', 'auto',...
     'PaperOrientation', 'portrait',...
     'PaperType', 'A4',...
     'Tag','imgsOfEventsFromAnalysis');
-
+hf.Visible = "on"
 switch selectedEvent.type
     case 'transient'
         text_ax = axes('Parent',hf, ...
@@ -93,12 +93,16 @@ switch selectedEvent.type
             for col = 1:size(strTransientsParams,2)
                 n_ToAdd = count(strTransientsParams{row,col},'\');
                 if n_ToAdd~=0
-                    strTransientsParams{row,col} = ...
-                        [strTransientsParams{row,col}, repmat(' ', [1 n_ToAdd])];
+                    strTransientsParams(row,col) = ...
+                        [strTransientsParams{row,col}, repmat(' ', [1 n_ToAdd])]
                 end
             end
         end
         strTransientsParams = join(strTransientsParams, '|', 2);
+
+
+        contains(strTransientsParams, '\')
+
         % show text
         text_ax2 = axes('Parent',hf, ...
             'Units','normalized', 'Position',[0.1 0.05 0.85 0.3], ...

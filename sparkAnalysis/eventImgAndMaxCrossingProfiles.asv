@@ -135,11 +135,11 @@ x_spark_prof_whImg_m = false(size(x_spark_prof_whImg));
 x_spark_prof_whImg_m(rows_e) = true;
 % position of peak in x profile
 if all(x_spark_prof_whImg_m)
-    [~, peakXPosPx] = max(x_spark_prof_whImg); 
-else
     x_spark_prof_whImg_evnt = x_spark_prof_whImg;
     x_spark_prof_whImg_evnt(~x_spark_prof_whImg_m) = -Inf;
     [~, peakXPosPx] = max(x_spark_prof_whImg_evnt);
+else
+    [~, peakXPosPx] = max(x_spark_prof_whImg);
 end
 % try to expand in x dimension
 try

@@ -42,6 +42,11 @@ else
     m_event = options.evntsMask;
 end
 
+figure
+        plot(m_event, 'k')
+        hold on 
+        plot(options.evntsMask, 'r')
+
 % take event peak position and its surrounding with maximum baseline 
 m_eventWithBsl = false(size(prof));
 m_eventWithBsl( ...

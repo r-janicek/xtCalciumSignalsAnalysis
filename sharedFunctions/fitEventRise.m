@@ -85,7 +85,7 @@ out.detectedEventsMask = false(numel(prof_t),1);
 % maximum duration of baseline in points
 switch eventType
     case 'global'
-        maxDurOfBaseline = ceil(500/pxSzT);
+        maxDurOfBaseline = ceil(1000/pxSzT);
     case 'local'
         maxDurOfBaseline = ceil(100/pxSzT);
 end

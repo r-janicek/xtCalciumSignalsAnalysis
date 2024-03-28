@@ -3,6 +3,8 @@ function getTemperatureRecord(hO,E,mainFig)
 load directory with both temperature and stumulus files
 
 %}
+% set pointer
+set(mainFig, "Pointer","watch")
 
 % data 
 hObjs = getappdata(mainFig, 'hObjs');
@@ -99,5 +101,7 @@ imagesc(imgData.wholeImgFluoXT, ...
 set(gca, 'FontSize',22, 'YTick',[], ...
     'XLim', [tempData_img.time(1) tempData_img.time(end)])
 xlabel("time")
+
+set(mainFig, "Pointer","arrow")
 
 end
