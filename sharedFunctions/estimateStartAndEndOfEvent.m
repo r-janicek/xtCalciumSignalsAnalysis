@@ -66,7 +66,6 @@ bsl_thrsh = percentl(3);
 prof_s(isnan(prof_s)) = bsl_thrsh;
 % treshold profile
 prof_s(prof_s < bsl_thrsh) = bsl_thrsh;
-
 % get all posible peaks in smoothed profile of events
 try
     [valPeaks_s, locPeaks_s] = findpeaks(prof_s(m_event));
@@ -81,12 +80,14 @@ locPeaks_s = locPeaks_s + find(m_event, 1, 'first') - 1;
 [~, idx_p] = min(abs(locPeaks_s-peakPosPx));
 % change values of currently fitted event to peak value
 % (to be sure I have correct estimate of baseline.
-% It might happen that detected spark has multiple peaks,
+% It might happen that detected spark has multiple peaks in decaying phase,
 % this will remove them and still keep nice trace to calculate gradient)
 % check
 m_event_thrs = prof_s > bsl_thrsh;
 if numel(locPeaks_s) > 1
-    prof_s(m_event_thrs) = valPeaks_s(idx_p);
+    prof_s_afterPeak = valPeaks_s(idx_p)*m_event_thrs(peakPosPx:end);
+    prof_s_afterPeak(prof_s_afterPeak==0) = bsl_thrsh;
+    prof_s(peakPosPx:end) = prof_s_afterPeak;
 end
 
 % calculate start and end of event using derivation

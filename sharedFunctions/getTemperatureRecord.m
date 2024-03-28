@@ -61,9 +61,6 @@ if img_rec_e > stimulusData.Nsam
     img_rec_e = stimulusData.Nsam;
 end
 
-% figure
-% plot(stimulus_img_V(img_rec_s:img_rec_e))
-
 % start and end of image recording
 imgRecStart = stimulusFileList_voltage_subset.date(ind) - ...
     seconds((stimulusData.x1-stimulusData.x0)/1000) + trigg_delay;

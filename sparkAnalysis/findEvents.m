@@ -50,7 +50,6 @@ end
 
 % check if there were some events detected
 if any(bwImg(:)~=0)
-    
     % do watersher and split close merged events if selected
     if watershedTransform
         spDetS = round(get(hObjs.sld_spDet,'Value')); % in percentage
