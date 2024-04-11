@@ -171,9 +171,9 @@ switch str
         % save crop roi position
         if isfield(imgData,'cropROIpos')
             cropROIpos = imgData.cropROIpos;   
-            imgData.cropROIpos = [cropROIpos(1)+ROI_pos(1) 
-                                  cropROIpos(2)+ROI_pos(2) 
-                                  ROI_pos(3) 
+            imgData.cropROIpos = [cropROIpos(1)+ROI_pos(1), ... 
+                                  cropROIpos(2)+ROI_pos(2), ...
+                                  ROI_pos(3), ... 
                                   ROI_pos(4)];
         else
             imgData.cropROIpos = ROI_pos;

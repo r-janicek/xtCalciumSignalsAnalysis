@@ -57,13 +57,13 @@ switch typeOfCalc
             % save crop roi position
             if isfield(imgData,'cropROIpos')
                 cropROIpos = imgData.cropROIpos;
-                imgData.cropROIpos = [cropROIpos(1)
-                    cropROIpos(2)+ROI_pos(2)
-                    cropROIpos(3)
+                imgData.cropROIpos = [cropROIpos(1), ...
+                    cropROIpos(2)+ROI_pos(2), ...
+                    cropROIpos(3), ...
                     ROI_pos(4)];
             else
-                imgData.cropROIpos = [t(1) ROI_pos(2) 
-                                      t(end)-t(1) ROI_pos(4)];
+                imgData.cropROIpos = ...
+                    [t(1), ROI_pos(2), t(end)-t(1), ROI_pos(4)];
             end
             % get crop of image to calculate baseline values
             crop_F0 = imgDataXTfluoFN(r_x,r_t);

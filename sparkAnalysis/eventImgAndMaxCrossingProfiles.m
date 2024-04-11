@@ -130,7 +130,7 @@ t_event_prof_m = t_whImg_evnt_m(cols_e);%false(size(cols_e));
 [~, c_m_t_bs] = max(t_spark_prof_whImg(cols_e));
 c_m_whImg = cols_e(1)-1+c_m_t_bs;
 x_spark_prof_whImg = ...
-    mean( img(:, c_m_whImg-(n_px_x-1)/2:c_m_whImg+(n_px_x-1)/2), 2);
+    mean( img(:, max(1,c_m_whImg-(n_px_x-1)/2):min(size(img,2),c_m_whImg+(n_px_x-1)/2)), 2);
 x_spark_prof_whImg_m = false(size(x_spark_prof_whImg));
 x_spark_prof_whImg_m(rows_e) = true;
 % position of peak in x profile
