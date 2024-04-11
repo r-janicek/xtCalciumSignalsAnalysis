@@ -36,8 +36,8 @@ if strcmp(hO.Tag,'peakFitSelPoints')
 
     hl_splFit = findall(ha,'Type','line','Tag','splineFit');
 
-    % look +- 100 ms and find peak if any
-    r = ceil(100/mean(diff(hl_splFit.XData)));
+    % look +- 50 ms and find peak if any
+    r = ceil(50/mean(diff(hl_splFit.XData)));
     try
         [p_v,p_p] = findpeaks(hl_splFit.YData(pos-r:pos+r),'SortStr','descend');
         p_v = p_v(1);

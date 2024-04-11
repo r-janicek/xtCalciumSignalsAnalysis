@@ -693,9 +693,12 @@ if ~isempty(statSparks)
     delete(hw), clearvars hw
     
 else
+    eventParams.calcMethod = [];
     eventParams.amplitude = [];
     eventParams.t0 = [];
+    eventParams.t0_lineFit_10_90 = [];
     eventParams.TTP = [];
+    eventParams.TTP_lineFit_10_90 = [];
     eventParams.FDHM = [];
     eventParams.FWHM = [];
     eventParams.sparkMass = [];

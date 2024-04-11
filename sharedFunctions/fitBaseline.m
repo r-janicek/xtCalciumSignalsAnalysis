@@ -64,12 +64,11 @@ switch type
         ft = fittype(type);
         opts = fitoptions('Method','NonlinearLeastSquares',...
             'Normalize','on',...
-            'Robust','Bisquare',...
+            'Robust','Off',...  % Bisquare
             'Exclude',~mBs);
         % fit
         [f_bs, ~,~] = fit(t(:), y(:), ft, opts);
-        bsFit = feval(f_bs,t);
-        
+        bsFit = feval(f_bs, t);        
 end
 
 if plotResult
