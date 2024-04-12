@@ -117,8 +117,8 @@ for i = 1:height(selectedROIs)
 
     % recalculate time positions in calcParamsFromFit, so they are starting
     % from the beginning of image (cropped)
-    calcParamsFromFit(2:end,[1,2,4,5,6,16]) = ...
-        num2cell(cell2mat(calcParamsFromFit(2:end,[1,2,4,5,6,16])) + posOfROIs(1));
+    calcParamsFromFit(2:end,[1,2,4,5,6,17]) = ...
+        num2cell(cell2mat(calcParamsFromFit(2:end,[1,2,4,5,6,17])) + posOfROIs(1));
     
     % create results array
     if exist('result','var')
