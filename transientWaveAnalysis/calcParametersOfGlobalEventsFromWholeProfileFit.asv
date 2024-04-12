@@ -91,7 +91,12 @@ for i = 1:Npeaks
     AUC = trapz(t_ups, eventFit_ups-bs(i));
     
     % calculate 1. derivative max amplitude and position, in real time axis   
-    [firstDerVal, firstDerPos] = max(gradient(eventFit));              
+    [firstDerVal, firstDerPos] = max(gradient(eventFit));
+
+     figure
+     plot(eventFit)
+                    
+
     % get tau of decay
     try
         % fit with single exponential
