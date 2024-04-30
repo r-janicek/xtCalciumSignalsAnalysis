@@ -91,6 +91,7 @@ end
         h_img.PickableParts = 'none';
         % get selected events mask
         selectedEvntsMask = r.UserData.mask;
+        pause(0.01)
         % delete selection rectangle
         delete(r)
         ha.ButtonDownFcn = '';
@@ -100,6 +101,7 @@ end
             'Would you like to delete selected events?', ...
         	'Delete selected events.', ...
         	'YES','NO','NO');
+        pause(0.01)
         switch answer
             case 'YES'
                 % delete event from detection output

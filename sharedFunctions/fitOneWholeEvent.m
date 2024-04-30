@@ -394,7 +394,7 @@ yFit = fitFun(coef, x);
 try
     switch model
         case {'1expR1expD', 'constThenSpline'}
-            yFit_ups = interp1(x, yFit, options.x_ups, 'makima');
+            yFit_ups = interp1(x, yFit, options.x_ups, 'pchip');
         otherwise
             yFit_ups = fitFun(coef,options.x_ups);
     end

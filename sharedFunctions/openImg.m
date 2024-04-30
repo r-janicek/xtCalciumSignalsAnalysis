@@ -376,6 +376,9 @@ switch getappdata(mainFig,'analysisType')
             'Callback',{@selectEventImage,mainFig})
         % restart table of selected events
         set(hObjs.h_table_eventsImgs,'Data',repmat({'----'},[5,1]))
+        % get stimulus and temperature recordings
+        
+        getTemperatureRecord([],[], mainFig, false, false)
 
     otherwise
         set(hObjs.h_table_profs,'Data',zeros(5,2))

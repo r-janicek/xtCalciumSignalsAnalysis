@@ -169,33 +169,6 @@ imgSize_px = [{'image size x (pixels)',imgSzPx(1)};{'image size t (pixels)',imgS
 blank = {'blank:',imgData.blank};
 
 
-%% save electrophysiology data, only when data preview is used
-if isfield(getappdata(mainFig),'electroPhys')
-    
-    electroPhys = getappdata(mainFig,'electroPhys');
-    
-    delayImgToCurr = electroPhys.delayImgToCurr; % in ms
-
-    % electrophysiology data 
-    currentAmpl = electroPhys.currentAmpl;
-        
-    if isfield(electroPhys,'cellParameters')
-        
-        cellParameters = electroPhys.cellParameters;
-        currentDensity = cell2mat(currentAmpl(2:end,3))./cellParameters{1,1}; % pA/pF
-        electro = [ [currentAmpl,[{'currDensity (pA/pF)'};num2cell(currentDensity)]];...
-                    [{'average'},{nan},num2cell(mean([currentAmpl{2:end,3}])),num2cell(mean(currentDensity))] ];
-        
-    else
-        electro = [currentAmpl;...
-                    [{'average'},{nan},num2cell(mean([currentAmpl{2:end,3}]))]];
-    end
-            
-    delayImg = {'delayOfImgToCurrent (ms)',delayImgToCurr};  
-else
-    delayImg = cell(1,2);
-end
-
 %% save data to xls file
 % delete xls file if exist
 if exist(path_xls, 'file')
@@ -205,7 +178,6 @@ end
 cellArr_info1 = [imgPath; imgName; cell(1,2); ...
                  imgSize_px; imgSize; pxSz_x; ...
                  pxSz_t; blank; ...
-                 delayImg; cell(1,2); ...
                  animal; [exp_notes, cell(numel(exp_notes),1)]];
 
 cellArr_info2 = [[imgFiltersUsed, cell(numel(imgFiltersUsed),1)]; ...
@@ -248,19 +220,8 @@ if hObjs.check_addTemperature.Value
     % check if exists
     if isfield(imgData, 'tempData_img')
         writetable(imgData.tempData_img, path_xls, 'Sheet','temperature');
-    end 
+    end
 end
-% save current ...
-if exist('electro','var')
-    writecell(electro, path_xls, 'Sheet','electroPhys');
-end
-if exist('cellParameters','var')
-    writecell([cellParameters.Properties.VariableNames;...
-        cellParameters.Properties.VariableUnits;...
-        table2cell(cellParameters)], path_xls, ...
-        'Sheet','currentAndCell');  
-end
-clearvars delayImgToCurr xt_cur V I electrophys delayImg
 
 
 %% create final whole image figures 
@@ -275,13 +236,13 @@ if isfield(imgData,'cropROIpos')
     cropROIpos = imgData.cropROIpos;
     
     if isfield(imgData,'crop_s_t')
-        crop_s_t = round(imgData.crop_s_t/pxSzT); % in px
+        crop_s_t = imgData.crop_s_t; %round(imgData.crop_s_t/pxSzT); % in px
     else
-        crop_s_t = [];
+        crop_s_t = 0;
     end    
 else
     cropROIpos = [];
-    crop_s_t = [];
+    crop_s_t = 0;
 end
 t_whImg = linspace(0,(size(whImg,2)-1)*pxSzT,size(whImg,2));
  
@@ -291,100 +252,86 @@ whImg_fig_final = figure('Tag','whImg_fig_final');
 set(whImg_fig_final,'Position',[1 1 scRes(3) scRes(4)])
 
 % plot whole image with white rectangle where it was cropped
-if isfield(getappdata(mainFig),'electroPhys') 
-    
-    electroPhys = getappdata(mainFig,'electroPhys');
-    
-    IcaLimits = electroPhys.IcaLimits;   
-    delayImgToCurr = electroPhys.delayImgToCurr; % in ms
-    xt_cur = electroPhys.xt_cur;
-    V = electroPhys.voltage;
-    ICa = electroPhys.current;
-    [~,pos_delay] = min(abs(xt_cur-delayImgToCurr));
-       
-    vol_ax = axes('Parent',whImg_fig_final, ...
-        'Units','normalized', 'Position',[0.04 0.93 0.94 0.06]);
-    plot(xt_cur(pos_delay:end), V(pos_delay:end), ...
-        'Parent',vol_ax, 'Color','k', 'LineWidth',2);
-    ylabel(vol_ax,'voltage (mV)')
-    set(vol_ax, 'XTick',[], 'FontSize',14)
-    set(vol_ax, 'XLim',[xt_cur(pos_delay) ...
-        max(size(whImg,2)*pxSzT+delayImgToCurr,xt_cur(end))],...
-        'YLim',[min(V(pos_delay:end))-5 max(V(pos_delay:end))+5])
-    
-    curr_ax = axes('Parent',whImg_fig_final, 'Units','normalized', ...
-        'Position',[0.04 0.795 0.94 0.13]);
-    plot(xt_cur(pos_delay:end), ICa(pos_delay:end), ...
-        'Parent',curr_ax, 'Color','r');
-    ylabel(curr_ax,'current (pA)')
-    set(curr_ax, 'XTick',[], 'FontSize',14)
-    set(curr_ax, 'XLim',[xt_cur(pos_delay) ...
-        max(size(whImg,2)*pxSzT+delayImgToCurr,xt_cur(end))],...
-        'YLim',IcaLimits)
-    
-    whImg_ax = axes('Parent',whImg_fig_final, 'Units','normalized', ...
-        'Position',[0.04 0.55 0.94 0.22]);
-    image(whImg, 'CDataMapping','scaled', 'Parent',whImg_ax, ...
-        'XData',[0 size(whImg,2)*pxSzT]);
-    if isempty(cropROIpos)
-        cropROIpos = [whImg_ax.XLim(1), whImg_ax.YLim(1), ... 
-                      whImg_ax.XLim(2), whImg_ax.YLim(2)];
+
+% add temperature recorded during experiment
+if hObjs.check_addTemperature.Value
+    % check if temperature recording exists
+    if isfield(imgData, 'tempData_img')
+        temp_ax = axes('Parent',whImg_fig_final, ...
+            'Units','normalized', ...
+            'Position',[0.04 0.895 0.94 0.09]);
+        plot(imgData.tempData_img.time, ...
+            imgData.tempData_img.temperature, ...
+            'Parent',temp_ax, 'Color','b', ...
+            'LineWidth',2);
+        ylabel(temp_ax, 'temperature (\circC)', 'FontSize',14)
+        set(temp_ax, 'FontSize',14)
+        set(temp_ax, 'XTick',[], ...
+            'XLim',[min(imgData.tempData_img.time) ...
+            max(imgData.tempData_img.time)],...
+            'YLim',[floor(min(imgData.tempData_img.temperature)) ...
+            ceil(max(imgData.tempData_img.temperature))])
     end
-    rectangle('Position',cropROIpos, 'Parent',whImg_ax,...
-        'EdgeColor','w', 'LineWidth',3)
-    colormap(parula(256))
-    set(whImg_ax, 'XTick',[], 'FontSize',14)
-    set(whImg_ax, 'XLim',[0 ...
-        max(size(whImg,2)*pxSzT+delayImgToCurr,xt_cur(end))-delayImgToCurr])
-    title('whole image, filtered')
-    %xlabel('t (ms)')
-    ylabel('x (pixels)')
- 
-else
-    % add temperature recorded during experiment
-    if hObjs.check_addTemperature.Value
-        % check if exists
-        if isfield(imgData, 'tempData_img')
-            temp_ax = axes('Parent',whImg_fig_final, ...
-                'Units','normalized', ...
-                'Position',[0.04 0.795 0.94 0.13]);
-            plot(imgData.tempData_img.time, ...
-                imgData.tempData_img.temperature, ...
-                'Parent',temp_ax, 'Color','b', ...
-                'LineWidth',2);
-            ylabel(temp_ax, 'temperature (\circC)', 'FontSize',14)
-            set(temp_ax, 'FontSize',14)
-            set(temp_ax, 'XTick',[], ...
-                'XLim',[min(imgData.tempData_img.time) ...
-                        max(imgData.tempData_img.time)],...
-                'YLim',[floor(min(imgData.tempData_img.temperature)) ...
-                        ceil(max(imgData.tempData_img.temperature))])
-        end
-    end
-    
-    whImg_ax = axes('Parent',whImg_fig_final, 'Units','normalized', ...
-        'Position',[0.04 0.55 0.94 0.22]);
-    image(whImg, 'CDataMapping','scaled', 'Parent',whImg_ax, ...
-        'XData',[0 size(whImg,2)*pxSzT]);
-    if isempty(cropROIpos)
-        cropROIpos = [whImg_ax.XLim(1), whImg_ax.YLim(1), ... 
-                      whImg_ax.XLim(2), whImg_ax.YLim(2)];
-    end
-    rectangle('Position',cropROIpos, 'Parent',whImg_ax,...
-        'EdgeColor','w', 'LineWidth',5)
-    colormap(parula(256))
-    set(whImg_ax, 'XTick',[], 'FontSize',14)
-    title('whole image, filtered')
-    %xlabel('t (ms)')
-    ylabel('x (pixels)')
-    delayImgToCurr = 0;
-    xt_cur = 0;
 end
+
+whImg_ax = axes('Parent',whImg_fig_final, 'Units','normalized', ...
+    'Position',[0.04 0.66 0.94 0.22]);
+image(whImg, 'CDataMapping','scaled', 'Parent',whImg_ax, ...
+    'XData',[0 size(whImg,2)*pxSzT]);
+if isempty(cropROIpos)
+    cropROIpos = [whImg_ax.XLim(1), whImg_ax.YLim(1), ...
+        whImg_ax.XLim(2), whImg_ax.YLim(2)];
+end
+rectangle('Position',cropROIpos, 'Parent',whImg_ax,...
+    'EdgeColor','w', 'LineWidth',5)
+colormap(parula(256))
+set(whImg_ax, 'XTick',[], 'FontSize',14)
+title('whole image, filtered')
+%xlabel('t (ms)')
+ylabel('x (pixels)')
+
+% add stimulus and caffeine perfusion
+if hObjs.check_addTemperature.Value
+    if isfield(imgData, 'stimAndCaff')
+        stim_ax = axes('Parent',whImg_fig_final, ...
+            'Units','normalized', ...
+            'Position',[0.04 0.58 0.94 0.06]);
+        plot(imgData.stimAndCaff.t-crop_s_t, ...
+            imgData.stimAndCaff.stimulus, ...
+            'Parent',stim_ax, 'Color','k', ...
+            'LineWidth',2);
+        ylabel(stim_ax, 'stimulus', 'FontSize',14)
+        set(stim_ax, 'FontSize',14)
+        set(stim_ax, 'XTick',[], 'YTick',[],  ...
+            'XLim',[imgData.t(1) imgData.t(end)],...
+            'YLim',[floor(min(imgData.stimAndCaff.stimulus)) ...
+            ceil(max(imgData.stimAndCaff.stimulus))])
+        caff_ax = axes('Parent',whImg_fig_final, ...
+            'Units','normalized', ...
+            'Position',[0.04 0.515 0.94 0.06]);
+        plot(imgData.stimAndCaff.t-crop_s_t, ...
+            imgData.stimAndCaff.caffeinePerfusion, ...
+            'Parent',caff_ax, 'Color','k', ...
+            'LineWidth',2);
+        ylabel(caff_ax, 'caffeine', 'FontSize',14)
+        set(caff_ax, 'FontSize',14)
+        set(caff_ax, 'XTick',[], 'YTick',[],...
+            'XLim',[imgData.t(1) imgData.t(end)],...
+            'YLim',[floor(min(imgData.stimAndCaff.caffeinePerfusion)) ...
+            ceil(max(imgData.stimAndCaff.caffeinePerfusion))])
+        move_up_axes = 0; 
+    else
+        move_up_axes = 0.135; 
+    end
+else
+    move_up_axes = 0.135;
+end
+
 % make sure it is showing whole image
 hObjs.ax_img.XLim = [imgData.t(1) imgData.t(end)];
 % copy filtered and normalized cropped image
 ax_CroppedImg = copyobj(hObjs.ax_img,whImg_fig_final);
-ax_CroppedImg.Position = [0.04 0.305 0.94 0.22];
+ax_CroppedImg.Position = [0.04 0.275+move_up_axes 0.94 0.22];
 title(ax_CroppedImg, ...
     'cropped image (white rectangle), filtered & normalized')
 % add colorbar
@@ -392,12 +339,12 @@ colormap(ax_CroppedImg, parula(256))
 h_CroppedImg = findall(ax_CroppedImg, 'Type','Image');
 clim(ax_CroppedImg, getAxisLimits(h_CroppedImg.CData, 1))
 h_cb = colorbar(ax_CroppedImg,'south');
-h_cb.Position = [0.92 0.035 0.06 0.01];
+h_cb.Position = [0.92 0.035+move_up_axes 0.06 0.01];
 h_cb.Label.String = '\DeltaF/F_0';
 
 % copy profile
 ax_imgProf = copyobj(hObjs.ax_prof,whImg_fig_final);
-ax_imgProf.Position = [0.04 0.11 0.94 0.19];
+ax_imgProf.Position = [0.04 0.10+move_up_axes 0.94 0.17];
 
 % show time to first wave from beginning of last triggered transient
 m_triggTrans = strcmp(result(:,6), 'transient_trigg' );
@@ -411,7 +358,7 @@ transRes(~m_triggTrans) = nan;
 firstWave_t0 = min([result{m_wave,9}]);
 
 try
-    yL = result{indTr,10} + result{indTr,15};
+    yL = result{indTr,11} + result{indTr,16};
     firstWaveLat = firstWave_t0 - lastTrans_t0;
     
     line(ax_imgProf,'XData',[lastTrans_t0 lastTrans_t0],...
@@ -433,7 +380,7 @@ end
 
 % invisible axes for text 
 text_ax = axes('Parent',whImg_fig_final, ...
-    'Units','normalized', 'Position',[0.03 0.01 0.94 0.08]);
+    'Units','normalized', 'Position',[0.03 0.01+move_up_axes 0.94 0.07]);
 set(text_ax,'Visible','off')
 
 notes = hObjs.h_table_notes.Data;
@@ -442,44 +389,16 @@ lineNotes = strjoin(cellfun(@(x) [x,' // '], notes,'UniformOutput',0));
 ImgDataPath = fullfile(imgData.filePath,imgData.fileName);
 ImgDataPath = strrep(ImgDataPath, '_', '\_');
 
-if isfield(getappdata(mainFig),'electroPhys')
-    
-    electroPhys = getappdata(mainFig,'electroPhys');
-    
-    if isfield(electroPhys,'cellParameters')
-        
-        cellParams = electroPhys.cellParameters;
-        cellParamsStr = strjoin(cellfun(@(a,b,c) sprintf('%s = %0.2f %s; ',a,b,c),...
-            cellParams.Properties.VariableNames,...
-            num2cell(cellParams{1,:}),...
-            cellParams.Properties.VariableUnits,...
-            'UniformOutput',0));
-        
-        txtStr = {sprintf('animal: %s', ...
-                    hObjs.popUpMenuAnimal.String{hObjs.popUpMenuAnimal.Value});...
-                  sprintf('%s',lineNotes);...
-                  ['cell parameters: ',cellParamsStr];...
-                  sprintf('average ICa = %0.2f (pA); average current density = %0.2f (pA/pF)',electro{end,3},electro{end,4});...
-                  sprintf('ImgDataPath: %s',ImgDataPath)};
-    else
-        txtStr = {sprintf('animal: %s',hObjs.popUpMenuAnimal.String{hObjs.popUpMenuAnimal.Value});...
-                  sprintf('%s',lineNotes);...
-                  sprintf('average ICa = %0.2f (pA)',electro{end,3});...
-                  sprintf('ImgDataPath: %s',ImgDataPath)};
-    end
-    
-else
-    txtStr = {sprintf('animal: %s',hObjs.popUpMenuAnimal.String{hObjs.popUpMenuAnimal.Value});...
-              sprintf('%s',lineNotes);...
-              sprintf('ImgDataPath: %s',ImgDataPath)};
-       
-end
+txtStr = {
+    sprintf('animal: %s',hObjs.popUpMenuAnimal.String{hObjs.popUpMenuAnimal.Value});...
+    sprintf('%s',lineNotes);...
+    sprintf('ImgDataPath: %s',ImgDataPath)};
 
 text(min(get(text_ax,'XLim')),max(get(text_ax,'YLim')),txtStr,...
     'Parent',text_ax,'FontUnits','points','FontSize',16,...
     'VerticalAlignment','top')
 
-%% figure of xy image, position of scanning line and TPP point, scale 
+%% figure of xy image, position of scanning line and TPP point, scale
 if ~isempty(imgData.imgDataXY)
     
     scanLinePos = imgData.scanLinePos;
