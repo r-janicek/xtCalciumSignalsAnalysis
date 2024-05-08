@@ -12,14 +12,19 @@ switch E.Button
             r = rectangle(hO, ...
                 'Position',[xinit yinit xinit-xinit yinit-yinit], ...
                 'EdgeColor',[0 0 1], ...
-                'LineWidth',3);
+                'LineWidth',3, ...
+                'Interruptible','off');
             % get events rois data
             % get events data
             sparkDetection = getappdata(hO.Parent, 'sparkDetection');
             % save original color of events rois
-            r.UserData.prevEvntsColor = cell2mat(arrayfun(@(x) get(x,'EdgeColor'), ...
+            data.prevEvntsColor = cell2mat(arrayfun(@(x) get(x,'EdgeColor'), ...
                 sparkDetection.detectedEventsRec, ...
                 'UniformOutput',false));
+            setappdata(r, 'data', data)
+            % r.UserData.prevEvntsColor = cell2mat(arrayfun(@(x) get(x,'EdgeColor'), ...
+            %     sparkDetection.detectedEventsRec, ...
+            %     'UniformOutput',false));
             % setup mouse moving fcn and buttonup fcn
             hO.Parent.WindowButtonMotionFcn = {@wbmcb,hO,r,xinit,yinit,sparkDetection};
             hO.Parent.WindowButtonUpFcn = {@wbucb,hO,r};
@@ -34,14 +39,15 @@ end
     % function executed when move with mouse pointer
     function wbmcb(hf, ~, ha, r, xinit, yinit, sparkDetection)
         % change color events to original one
-        if isfield(r.UserData, 'mask')
+        data = getappdata(r, 'data');
+        if isfield(data, 'mask')
             for i = 1:numel(sparkDetection.detectedEventsRec)
-                if ~r.UserData.mask(i)
+                if ~data.mask(i)
                     set(sparkDetection.detectedEventsRec(i), ...
-                        'EdgeColor',r.UserData.prevEvntsColor(i,:))
+                        'EdgeColor',data.prevEvntsColor(i,:))
                     set(sparkDetection.detectedEventsMask(i), ...
-                        'EdgeColor',r.UserData.prevEvntsColor(i,:), ...
-                        'FaceColor',r.UserData.prevEvntsColor(i,:))
+                        'EdgeColor',data.prevEvntsColor(i,:), ...
+                        'FaceColor',data.prevEvntsColor(i,:))
                 end
             end
         end
@@ -76,7 +82,8 @@ end
         end
         drawnow
         % save mask of selected events to rectangle data
-        r.UserData.mask = selectedEvntsMask;
+        data.mask = selectedEvntsMask;
+        setappdata(r, 'data', data)
     end
 
 
@@ -90,20 +97,19 @@ end
         h_img = findobj(ha, 'Type', 'Image');
         h_img.PickableParts = 'none';
         % get selected events mask
-        selectedEvntsMask = r.UserData.mask;
-        pause(0.01)
+        data = getappdata(r, 'data');
+        selectedEvntsMask = data.mask;
         % delete selection rectangle
         delete(r)
         ha.ButtonDownFcn = '';
         sparkDetection = getappdata(hf, 'sparkDetection');
         % delete selected events
-        answer = questdlg( ...
-            'Would you like to delete selected events?', ...
-        	'Delete selected events.', ...
-        	'YES','NO','NO');
-        pause(0.01)
-        switch answer
-            case 'YES'
+        % answer = questdlg( ...
+        %     'Would you like to delete selected events?', ...
+        % 	'Delete selected events.', ...
+        % 	'YES','NO','NO');
+        % switch answer
+        %     case 'YES'
                 % delete event from detection output
                 newDetectedEvents = sparkDetection.detectedEvents;
                 newDetectedEvents(selectedEvntsMask) = [];
@@ -117,11 +123,11 @@ end
                 % save changes
                 setappdata(hf, 'sparkDetection', sparkDetection)
                 % update detected events
-                eventsDetection(hO, [], hf, 'update')
+               eventsDetection(hO, [], hf, 'update')
 
-            case 'NO'
-                return
-        end
+        %     case 'NO'
+        %         return
+        % end
     end
 
 end
