@@ -21,6 +21,10 @@ prcOfAmpl_val_sE = (peakVal - bs)*((min(1,prcOfAmpl-10))/100) + bs;
 t_prof_beforePeak = t_prof(1:peakPos-1);
 t_prof_beforePeak = flipud(t_prof_beforePeak(:));
 
+if isempty(t_prof_beforePeak)
+    t_prof_beforePeak = t_prof(1);
+end
+
 % before peak, also add some points with lower amplitude than desired one
 sE = min(sE, ...
     numel(t_prof_beforePeak) - ...
