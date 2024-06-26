@@ -42,7 +42,7 @@ if ~isempty(t_prof)
     % search for peak
     if isempty(peakData)
         %[val_t,pos_t] = max(t_prof);
-        [pks_t,locs_t,w_t,~] = findpeaks(t_prof(tProf_m),t(tProf_m),...
+        [pks_t, locs_t, w_t, ~] = findpeaks(t_prof(tProf_m),t(tProf_m),...
             'SortStr','descend');
     else
         % look 15 ms around, in points
@@ -51,10 +51,12 @@ if ~isempty(t_prof)
         if startPoint<1, startPoint=1; end
         endPoint = peakData.pos+eps;
         if endPoint>numel(t_prof), endPoint=numel(t_prof); end
-
+        evntPeakAreaToCheck = false(size(t_prof));
+        evntPeakAreaToCheck(startPoint:endPoint) = true;
+        evntPeakAreaToCheck = evntPeakAreaToCheck & tProf_m;
         [pks_t,locs_t,w_t,~] = findpeaks( ...
-            t_prof(startPoint:endPoint),...
-            t(startPoint:endPoint),'SortStr','descend');
+            t_prof(evntPeakAreaToCheck),...
+            t(evntPeakAreaToCheck),'SortStr','descend');
     end
     try
         val_t = pks_t(1);

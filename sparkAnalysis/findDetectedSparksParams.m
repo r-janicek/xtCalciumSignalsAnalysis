@@ -50,7 +50,8 @@ if ~isempty(statSparks)
             hw.Visible = 'off';
         end
     end
-    
+    % table to show analyzed events
+    analyzedEventsData = table();
     for i = 1:length(statSparks)
         % get number of spark ROI rectangle
         switch getappdata(mainFig, 'analysisType')
@@ -225,12 +226,12 @@ if ~isempty(statSparks)
                         [~, sE_ups] = min( abs( t_ups - t(sE) ) );
                         [~, eE_ups] = min( abs( t_ups - t(eE) ) );
                         tProf_m_ups(sE_ups:eE_ups) = true;
+
                         % peak position and value
                         [~, loc_ups] = findpeaks(...
                             out_t_prof.yFit_ups(tProf_m_ups), ...
                             t_ups(tProf_m_ups), 'NPeaks',1, ...
                             'SortStr','descend');
-
                         if isempty(loc_ups)
                             [~, loc_ups] = max(out_t_prof.yFit_ups(tProf_m_ups));
                             loc_ups = t_ups(loc_ups + sE_ups);
@@ -373,6 +374,16 @@ if ~isempty(statSparks)
         
         % show  individual calcium events
         if hObjs.check_showEventsFigs.Value
+            % create one window to check analyzed sparks and possibly save
+            % them
+            %%%% TO DO, will be much faster
+            % create table with all data neccesary to show them in single
+            % figure window, save events in grid 2*2, not necessary to have
+            % single events per page in PDF, drop GIF
+            % analyzedEventsData = [table(); ...
+            %     table(sparkROInum, {eventParams}, {calcMethod},  ...
+            %     'VariableNames',{'sparkROInum', 'eventParams', 'calcMethod'})]
+
             % setup titles of figures and axes
             switch getappdata(mainFig, 'analysisType')
                 case 'spark detection'

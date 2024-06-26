@@ -72,6 +72,7 @@ end
 % find column as max in profile of event
 prof_t_imgE = mean(imgE(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), 1);
 prof_t_imgE_m = any(imgE_trsh_m(r_m-(n_px_t-1)/2:r_m+(n_px_t-1)/2,:), 1);
+
 % set values outside of detected region around event maximum as -INF
 prof_t_imgE(~prof_t_imgE_m) = -inf; 
 [~,c_m] = max(prof_t_imgE);
@@ -90,8 +91,8 @@ t_whImg = (1:1:size(img,2)).*pxSzT - pxSzT;
 t_spark_prof_whImg = mean( ...
     img(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
 t_spark_prof_whImg = t_spark_prof_whImg(:);
-t_whImg_evnt_m = false(size(t_whImg));
-t_whImg_evnt_m(cols_e) = true;
+t_whImg_evnt_m = any( ...
+    imgMask(r_m_whImg-(n_px_t-1)/2:r_m_whImg+(n_px_t-1)/2,:) , 1 );
 % check if isempty startOfEvent, try to estimate it
 if isempty(startOfEvent)
     % fit only rise of spark fun(t0,tR,A,y0)
