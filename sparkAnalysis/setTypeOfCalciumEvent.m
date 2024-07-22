@@ -125,6 +125,15 @@ switch hObj.Type
                         newTypeOfEvent(idx) = [];
                         newMaskOfAcceptedSparks = detectedEvnts.maskOfAcceptedSparks;
                         newMaskOfAcceptedSparks(idx) = [];
+                        if isfield(detectedEvnts, ...
+                                'analyzedEvntsBrowserTbl')
+                            % remove it, and reanalyze events after 
+                            % you are done with deleting/splitting events 
+                            close(findall(0, 'Type','Figure', ...
+                                'Tag','CaEventsBrowser'))
+                            detectedEvnts = rmfield(detectedEvnts, ...
+                                "analyzedEvntsBrowserTbl");
+                        end
                         detectedEvnts.detectedEvents = newDetectedEvents;
                         detectedEvnts.typeOfEvent = newTypeOfEvent;
                         detectedEvnts.maskOfAcceptedSparks = newMaskOfAcceptedSparks;

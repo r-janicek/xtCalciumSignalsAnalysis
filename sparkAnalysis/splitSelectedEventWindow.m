@@ -382,6 +382,17 @@ newMaskOfAcceptedSparks = [ ...
 sparkDetection.detectedEvents = newDetectedEvents;
 sparkDetection.typeOfEvent = newTypeOfEvent;
 sparkDetection.maskOfAcceptedSparks = newMaskOfAcceptedSparks;
+
+if isfield(sparkDetection, ...
+        'analyzedEvntsBrowserTbl')
+    % remove it, and reanalyze events after
+    % you are done with deleting/splitting events
+    close(findall(0, 'Type','Figure', ...
+        'Tag','CaEventsBrowser'))
+    sparkDetection = rmfield(sparkDetection, ...
+        "analyzedEvntsBrowserTbl");
+end
+
 % save changes
 setappdata(mainFig, 'sparkDetection', sparkDetection)
 % update detected events

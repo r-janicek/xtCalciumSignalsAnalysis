@@ -41,18 +41,40 @@ else
 end
 
 % get sparks parameters
-sparkDetection.eventParams = findDetectedSparksParams( ...
+bsDetSensitivity = str2double(hObjs.h_bsDet_edit.String);
+smoothSpan = str2double(hObjs.h_smooth_edit.String);
+[sparkDetection.eventParams, sparkDetection.analyzedEvntsBrowserTbl] = ...
+    findDetectedSparksParams( ...
     img, ...
     sparkDetection.detectedEvents, mainFig, ...
     calcMethod, sparkDetection.detectedEventsRec, ...
-    [], [], [], [], hObjs.check_useNormalizedImg.Value);
+    [], [], [], [], hObjs.check_useNormalizedImg.Value, ...
+    bsDetSensitivity, smoothSpan);
 
 % save data
 setappdata(mainFig, 'sparkDetection', sparkDetection);
 
+% set numbers of events per page in case of saving them
+if ~isempty(sparkDetection.analyzedEvntsBrowserTbl)
+    possible_n_evnts_perFig = [1, 2, 4, 9, 12];
+    [~, ind_n_evntsPerFig] = min( abs( possible_n_evnts_perFig - ...
+        height(sparkDetection.analyzedEvntsBrowserTbl) ) );
+    hObjs.h_edit_numOfEvntsPerPage.String = ...
+        num2str(possible_n_evnts_perFig(ind_n_evntsPerFig));
+end
 % sparks filtering based on their parameters, also change colors of rectangles of rejected
 % sparks
 sparkParamsFiltering([], [], mainFig);
+
+% show  individual calcium events
+if hObjs.check_showEventsFigs.Value && ...
+        ~isempty(sparkDetection.analyzedEvntsBrowserTbl)
+    % close previous events viewer window, if any
+    close(findall(0, 'Type','Figure', 'Tag','CaEventsBrowser'))
+    % start events viewer window
+    sparkDetection = getappdata(mainFig,'sparkDetection');
+    eventsBrowserWindow(mainFig, sparkDetection.analyzedEvntsBrowserTbl)
+end
 
 end
 

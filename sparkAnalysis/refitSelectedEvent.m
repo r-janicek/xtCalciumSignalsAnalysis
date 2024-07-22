@@ -1,54 +1,44 @@
-function refitSelectedEvent(h_O, ~, ind, mainFig)
+function refitSelectedEvent(h_O, ~, mainFig, hf_evntBrowser)
 % refit selected event
 % get data
 imgData = getappdata(mainFig,'imgData');
-hObjs = getappdata(mainFig,'hObjs');
+hObjs_evntsBrowser = getappdata(hf_evntBrowser, 'hObjs');
+hObjs_mainFig = getappdata(mainFig, 'hObjs');
 sparkDetection = getappdata(mainFig, 'sparkDetection');
-% selected method of parameters calculation
-switch hObjs.calcSpParamMethodRBgroup.SelectedObject.String
-    case '2D gaussian fit'
-        calcMethod = '2DGauss';
-    case 'max crossing profiles'
-        calcMethod = 'peakXTProfiles';
-    case 'estimate from event img'
-        calcMethod = 'estimate from event img';
-end
-% set show individual events to "on"
-showEventsFigOldVal = hObjs.check_showEventsFigs.Value;
-if showEventsFigOldVal < 1
-    hObjs.check_showEventsFigs.Value = 1;
-end
+analyzedEvntsBrowserTbl =  sparkDetection.analyzedEvntsBrowserTbl;
+% selected event
+ind = round(hObjs_evntsBrowser.sld_evnts.Value);
+evnt = analyzedEvntsBrowserTbl(ind, :);
+
 % check if use normalized image or filtered raw
-if hObjs.check_useNormalizedImg.Value
+if hObjs_mainFig.check_useNormalizedImg.Value
     img = imgData.imgDataXTfluoFN;
 else
     % filter raw image
-    img = imgFiltering(imgData.imgDataXTfluoR, pxSzT, pxSzX);
+    img = imgFiltering(imgData.imgDataXTfluoR, imgData.pxSzT, imgData.pxSzX);
 end
-% change values for baseline detection and smoothing
-oldVal_bs = hObjs.h_bsDet_edit.String;
-oldVal_smooth = hObjs.h_smooth_edit.String;
-new_smooth_edit = getappdata(h_O.Parent.Parent, 'h_smooth_reFit');
-new_bs_edit = getappdata(h_O.Parent.Parent, 'h_bsDet_reFit');
-% set new values of baseline and smooth to main window
-hObjs.h_bsDet_edit.String = new_bs_edit.String;
-hObjs.h_smooth_edit.String = new_smooth_edit.String;
-
-evntParams = findDetectedSparksParams(img, ...
+% refit event
+[eventParams, refittedEvntTbl] = findDetectedSparksParams(img, ...
     sparkDetection.detectedEvents(ind), ...
-    mainFig, calcMethod,...
+    mainFig, evnt.calcMethod{1},...
     sparkDetection.detectedEventsRec(ind), ...
     [], [], [], [], ...
-    hObjs.check_useNormalizedImg.Value);
-% keep the new figure, close the old one
-close(h_O.Parent.Parent)
+    hObjs_mainFig.check_useNormalizedImg.Value, ...
+    str2double(hObjs_evntsBrowser.h_bsDet_reFit.String), ...
+    str2double(hObjs_evntsBrowser.h_smooth_reFit.String));
+
 % update parameters of event in final structure
 if isfield(sparkDetection, 'eventParams')
     params = fieldnames(sparkDetection.eventParams);
     for p = 1:numel(params)
-        sparkDetection.eventParams.(params{p})(ind) = evntParams.(params{p});
+        sparkDetection.eventParams.(params{p})(ind) = eventParams.(params{p});
     end
 end
+% update table of analyzed events
+refittedEvntTbl = [refittedEvntTbl, ...
+    sparkDetection.analyzedEvntsBrowserTbl(ind, 'maskOfAcceptedSparks')];
+sparkDetection.analyzedEvntsBrowserTbl(ind, :) = refittedEvntTbl;
+
 % save data
 setappdata(mainFig, 'sparkDetection', sparkDetection);
 
@@ -56,8 +46,8 @@ setappdata(mainFig, 'sparkDetection', sparkDetection);
 % sparks
 sparkParamsFiltering([], [], mainFig);
 
-% change back smooth and baseline values in main window
-hObjs.h_bsDet_edit.String = oldVal_bs;
-hObjs.h_smooth_edit.String = oldVal_smooth;
+% update events browser
+showSelectedEventInBrowser(hObjs_evntsBrowser.sld_evnts, [], ...
+    hf_evntBrowser, mainFig)
 
 end

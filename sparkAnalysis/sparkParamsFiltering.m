@@ -11,6 +11,9 @@ end
 
 % set detected sparks rectangles to only red color
 arrayfun(@(x) set(x,'EdgeColor','r'), sparkDetection.detectedEventsRec )
+arrayfun(@(x) set(x,'EdgeColor','r'), sparkDetection.detectedEventsMask )
+arrayfun(@(x) set(x,'Color','r'), ...
+    findall(hObjs.ax_img, 'Tag','detectedEventRecText') )
 
 % check amplitude
 mA = sparkDetection.eventParams.amplitude > str2double(hObjs.h_edit_noise.String);
@@ -44,6 +47,10 @@ mStrRecTxt_rejectedSparks = ismember( str2num(char(rectTxtStr)), ...
 
 % set color of text, which belongs to rectangles
 arrayfun(@(x) set(x,'Color','k'), rectTxt(mStrRecTxt_rejectedSparks))
+
+% add mask to analyzedEvntsBrowserTbl
+sparkDetection.analyzedEvntsBrowserTbl.maskOfAcceptedSparks = ...
+    maskOfAcceptedSparks(:);
 
 % save data
 sparkDetection.maskOfAcceptedSparks = maskOfAcceptedSparks;

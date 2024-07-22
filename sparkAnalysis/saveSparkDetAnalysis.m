@@ -170,7 +170,11 @@ cellArrToWrite = [cellArr_info1, cell(maxArrHeight,1), ...
 % save data
 writecell(cellArrToWrite, path_xls, 'Sheet','info');
 
-%% create final whole image figures 
+%% create final whole image figures
+% add waitbar
+hw_figs = waitbar(0, '...', ...
+    'Name','Creating and saving figures...');
+
 scRes = get(0,'ScreenSize');
 
 %filter data, whole image
@@ -345,27 +349,37 @@ else
     xyCellImg_h = [];
 end
 
-
 %% save figures
-
 % get handle of imgage parts analysis
 h_imgPartsAnalysis = findobj('-regexp','Tag','parts of image');
 
-% handles of figures of ca events, take only accepted sparks 
-h_figsCaEvents = findobj('Type','figure','Tag','CaEventParam');
+% handles of figures of ca events, take only accepted sparks
+% make function to create figures with events with defined number of events
+% per figure; close also event browser, only if we are saving them
+if hObjs.check_saveEventsFigs.Value
+    if ~isempty(sparkDetection.analyzedEvntsBrowserTbl)
+        % create figures with predefined numbers of analyzed events
+        % with layout 'inSingleRow' 'square'
+        h_figsCaEvents = analyzedCaEventsFiguresToSave( ...
+            str2double(hObjs.h_edit_numOfEvntsPerPage.String), ...
+            sparkDetection.analyzedEvntsBrowserTbl, ...
+            'square');
+    end
+end
+
 if ~isempty(h_figsCaEvents)
-    eventNum = arrayfun(@(x) sscanf(x.Name,'spark from ROI #: %d'), ...
+    eventNum = arrayfun(@(x) sscanf(x.Name,'CaEventParamFigure #%d'), ...
         h_figsCaEvents, 'UniformOutput',1);
     [~,indx_e] = sort(eventNum, 1, 'ascend');
     h_figsCaEvents = h_figsCaEvents(indx_e);
-    % take only accepted sparks
-    acceptedSparks = dataSparks(dataSparks.maskOfAcceptedSparks,:);
-    % close not accepted ones
-    h_figsCaEvents_notAccepted = h_figsCaEvents( ...
-        ~ismember(eventNum(indx_e), acceptedSparks.sparkROINum));
-    h_figsCaEvents = h_figsCaEvents( ...
-        ismember(eventNum(indx_e), acceptedSparks.sparkROINum));
-    close(h_figsCaEvents_notAccepted)
+    % % take only accepted sparks
+    % acceptedSparks = dataSparks(dataSparks.maskOfAcceptedSparks,:);
+    % % close not accepted ones
+    % h_figsCaEvents_notAccepted = h_figsCaEvents( ...
+    %     ~ismember(eventNum(indx_e), acceptedSparks.sparkROINum));
+    % h_figsCaEvents = h_figsCaEvents( ...
+    %     ismember(eventNum(indx_e), acceptedSparks.sparkROINum));
+    % close(h_figsCaEvents_notAccepted)
 end
 
 % get handles of all figures to save
@@ -387,10 +401,9 @@ else
 end
  
 % get path to save figures 
-[pathFigs, nameFigs,~] = fileparts(path_xls);
+[pathFigs, nameFigs, ~] = fileparts(path_xls);
 % output file path with selected format
-outputFiguresFilePath = sprintf('%s/%s.%s', pathFigs, nameFigs, ...
-    hObjs.outputFileFormatRBgroup.SelectedObject.String);
+outputFiguresFilePath = sprintf('%s/%s.pdf', pathFigs, nameFigs);
 % delete files if exist
 if exist(outputFiguresFilePath, 'file')
     delete(sprintf('%s/%s.pdf', pathFigs, nameFigs))
@@ -410,7 +423,7 @@ if exist(sprintf('%s/%s.gif', pathFigs, nameFigs), 'file') || ...
     end
 end
 
-% save figures as .gif or .pdf
+% save figures as .pdf
 if ~isempty(allHtoSave)
     for i = 1:numel(allHtoSave)     
         % set upfigures for printing
@@ -435,8 +448,12 @@ if ~isempty(allHtoSave)
     close(allHtoSave)
 end
 
+% close waitbar
+delete(hw_figs)
+
 %%
 close(findobj('Type','figure','Name','Experiment prewiev'));
+close(findobj('Type','figure','Name','CaEventsBrowser'));
 
 % clear window
 if isfield(hObjs, 'ax_img_sparks')

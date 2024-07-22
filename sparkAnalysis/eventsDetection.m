@@ -164,5 +164,6 @@ switch getappdata(mainFig, 'analysisType')
         end
     otherwise    
 end
+
 end
 
