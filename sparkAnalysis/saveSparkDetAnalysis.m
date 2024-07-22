@@ -173,7 +173,8 @@ writecell(cellArrToWrite, path_xls, 'Sheet','info');
 %% create final whole image figures
 % add waitbar
 hw_figs = waitbar(0, '...', ...
-    'Name','Creating and saving figures...');
+    'Name','Creating and saving figures...', ...
+    'WindowStyle','modal');
 
 scRes = get(0,'ScreenSize');
 
@@ -349,6 +350,8 @@ else
     xyCellImg_h = [];
 end
 
+figure(hw_figs)
+
 %% save figures
 % get handle of imgage parts analysis
 h_imgPartsAnalysis = findobj('-regexp','Tag','parts of image');
@@ -366,6 +369,8 @@ if hObjs.check_saveEventsFigs.Value
             'square');
     end
 end
+
+figure(hw_figs)
 
 if ~isempty(h_figsCaEvents)
     eventNum = arrayfun(@(x) sscanf(x.Name,'CaEventParamFigure #%d'), ...
@@ -400,6 +405,7 @@ else
     close(h_figsCaEvents)
 end
  
+figure(hw_figs)
 % get path to save figures 
 [pathFigs, nameFigs, ~] = fileparts(path_xls);
 % output file path with selected format
@@ -436,16 +442,20 @@ if ~isempty(allHtoSave)
         if ~exist(outputFiguresFilePath, 'file')
             exportgraphics(allHtoSave(i), ...
                 outputFiguresFilePath, ...
-                'Resolution',str2double(hObjs.h_edit_res.String))
+                'Resolution',str2double(hObjs.h_edit_res.String), ...
+                'ContentType','vector')
         else
             % append
             exportgraphics(allHtoSave(i), ...
                 outputFiguresFilePath, ...
                 'Append',true, ...
-                'Resolution',str2double(hObjs.h_edit_res.String))
+                'Resolution',str2double(hObjs.h_edit_res.String), ...
+                'ContentType','vector')
         end                                    
     end  
     close(allHtoSave)
+    % close events viewer window, if any
+    close(findall(0, 'Type','Figure', 'Tag','CaEventsBrowser'))
 end
 
 % close waitbar
