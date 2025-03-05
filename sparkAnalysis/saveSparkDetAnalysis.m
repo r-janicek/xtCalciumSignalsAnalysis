@@ -235,8 +235,9 @@ image(crImg,'CDataMapping','scaled', 'Parent',cImg_ax,...
 ylabel(cImg_ax, 'x (pixels)')
 colormap(cImg_ax, parula(256))
 
-clim(cImg_ax, [floor(prctile(crImg(:),1)*10)/10 ...
-               ceil(prctile(crImg(:),99.9)) ])
+% clim(cImg_ax, [floor(prctile(crImg(:),1)*10)/10 ...
+%                ceil(prctile(crImg(:),99.9)) ])
+clim(cImg_ax, getAxisLimits(prctile(crImg(:), [1,99.5]), 1))
 h_cb = colorbar(cImg_ax,'west');
 h_cb.Position = [0.95 0.15 0.01 0.15];
 h_cb.Label.String = '\DeltaF/F_0';
@@ -371,7 +372,9 @@ if hObjs.check_saveEventsFigs.Value
 end
 
 figure(hw_figs)
-
+if ~exist('h_figsCaEvents', "var")
+    h_figsCaEvents = [];
+end
 if ~isempty(h_figsCaEvents)
     eventNum = arrayfun(@(x) sscanf(x.Name,'CaEventParamFigure #%d'), ...
         h_figsCaEvents, 'UniformOutput',1);

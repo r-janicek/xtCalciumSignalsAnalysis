@@ -364,8 +364,8 @@ title('cropped image (white rectangle), filtered & normalized')
 
 % colorbar
 % cLims = [floor(prctile(crImg(:),1)*10)/10 ceil( prctile(crImg(:),99.9) )];
-
-clim(cImg_ax, getAxisLimits(crImg, 1))
+clim(cImg_ax, getAxisLimits(prctile(crImg(:), [1,99.5]), 1))
+% clim(cImg_ax, getAxisLimits(crImg, 1))
 h_cb = colorbar(cImg_ax,'south');
 h_cb.Position = [0.90 0.11 0.07 0.01];
 h_cb.Label.String = '\DeltaF/F_0';

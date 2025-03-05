@@ -337,7 +337,8 @@ title(ax_CroppedImg, ...
 % add colorbar
 colormap(ax_CroppedImg, parula(256))
 h_CroppedImg = findall(ax_CroppedImg, 'Type','Image');
-clim(ax_CroppedImg, getAxisLimits(h_CroppedImg.CData, 1))
+clim(ax_CroppedImg, ...
+    getAxisLimits(prctile(h_CroppedImg.CData(:), [1,99.5]), 1))
 h_cb = colorbar(ax_CroppedImg,'south');
 h_cb.Position = [0.92 0.035+move_up_axes 0.06 0.01];
 h_cb.Label.String = '\DeltaF/F_0';

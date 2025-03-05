@@ -138,7 +138,8 @@ switch typeOfCalc
             case 'transients & waves'
                 typeFit = hObjs.popUpMenuBaselineFcn.String{...
                     hObjs.popUpMenuBaselineFcn.Value};
-                mBs = imgData.baselineM;
+                mBs = repmat(imgData.baselineM(:)', ...
+                    [size(imgDataXTfluoFN, 1), 1]);
         end
         % set up pointer to watch
         mainFig.Pointer = 'watch';
@@ -159,7 +160,7 @@ switch typeOfCalc
             % Update waitbar and message
             waitbar(i/size(imgDataXTfluoFN,1), hw, ...
                 sprintf('%d %%',round((i/size(imgDataXTfluoFN,1))*100)))
-            % calc baseline
+            % calculate baseline
             F0(i,:) = fitBaseline(t, imgDataXTfluoFN(i,:), ...
                 typeFit, mBs(i,:), 0, []);
             F0raw(i,:) = fitBaseline(t, imgDataXTfluoRN(i,:), ...
