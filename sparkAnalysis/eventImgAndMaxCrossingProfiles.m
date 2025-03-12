@@ -16,8 +16,8 @@ imgMask = false(size(img));
 % mask of event in rectangle image of event
 imgMask(rows_e,cols_e) = statEvent.Image;
 % try to update WeightedCentroid position
-% there should be only one event of interenst in imgE mask
-% do treshold 90th percentile, create mask and do AND operation with
+% there should be only one event of interest in imgE mask
+% do threshold 90th percentile, create mask and do AND operation with
 % previous event mask
 %imgE_s = imgaussfilt(imgE, 1);
 imgE_trsh_m = imgE >= prctile(imgE(statEvent.Image), 90);
@@ -25,11 +25,11 @@ imgE_trsh_m = imgE_trsh_m & statEvent.Image;
 
 % imgE_trsh_m = statEvent.Image;
 
-% calculate properties of all CC (regions) in event area, to get centre
+% calculate properties of all CC (regions) in event area, to get center
 % of event
 CC_SubRegions = bwconncomp(imgE_trsh_m,8);
 statOfSubRegions = regionprops(CC_SubRegions, imgE, ...
-    'WeightedCentroid', 'Area', 'SubarrayIdx', ...
+    'WeightedCentroid', 'Centroid', 'Area', 'SubarrayIdx', ...
     'MeanIntensity', 'MaxIntensity', 'PixelIdxList', ...
     'Solidity', 'EulerNumber');
 % find biggest region
@@ -52,16 +52,19 @@ imgE_trsh_m(statOfSubRegions(p).PixelIdxList) = true;
 % nexttile
 % imagesc(imgE_trsh_m)
 
-% get position of centre of event
+% get position of center of event
 r_m = round(statOfSubRegions(p).WeightedCentroid(2));
 % c_m = round(statOfSubRegions(p).WeightedCentroid(1));
+if r_m > size(imgE, 1)
+    r_m = round(statOfSubRegions(p).Centroid(2));
+end
 
-% % get position of centre of event
+% % get position of center of event
 % centr = statEvent.WeightedCentroid;
 % r_m = round(centr(2) - min(rows_e));
 % c_m = round(centr(1) - min(cols_e));
 
-% dimension for calulation of profiles (t and x) crossing peak
+% dimension for calculation of profiles (t and x) crossing peak
 % decrease width of stripe for calculation of time profile
 if (r_m-(n_px_t-1)/2 <= 0) || (r_m+(n_px_t-1)/2 > size(imgE,1))
     n_px_t = min(2*r_m-1, abs(2*(size(imgE,1)-r_m)-1));
