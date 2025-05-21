@@ -84,6 +84,7 @@ if ~isempty(t_prof)
         % [~, ~, ~, ~, pos_90, ~] = fullDurationCalc( ...
         %     t, t_prof, sE, eE, val_t, pos_t, bs_t, 90);
     catch
+        percRise = [10, 90];
         FDHM = w_t(1);
         half_max_t = nan;
         half_max_t_1 = nan;
