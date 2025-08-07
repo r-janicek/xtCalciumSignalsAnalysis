@@ -7,9 +7,10 @@ prof = fluorescence profile
 peakPosPx = position of peak
 options:
     maxDurOfBaseline = maximum duration of baseline
-    equalBaselineDur = symetric maximum baseline
+    equalBaselineDur = symmetric maximum baseline
     evntsMask = mask of event in profile
-    smoothSpan = number of points to consider 
+    smoothSpan = number of points to consider
+    prof_t_s = smoothed profile
     evntAcceptCrit = in percentage
 %}
 arguments         
@@ -17,8 +18,9 @@ arguments
     peakPosPx (1,1) {mustBeInteger, mustBePositive}
     options.maxDurOfBaseline (1,1) {mustBeInteger, mustBePositive} = 10
     options.equalBaselineDur (1,1) logical = true
-    options.evntsMask (:,1) logical = true(size(x))
+    options.evntsMask (:,1) logical = true(size(prof))
     options.smoothSpan (1,1) {mustBeInteger, mustBePositive} = 10
+    options.prof_t_s (:,1) {mustBeNumeric} = nan(size(prof))
     options.evntAcceptCrit (1,1) {mustBeInteger, mustBePositive} = 75
     options.baselineDurMult (1,1) {mustBeNumeric, mustBePositive} = 2
 end
@@ -49,10 +51,14 @@ m_eventWithBsl( ...
     min(numel(prof), peakPosPx+ceil(options.baselineDurMult*options.maxDurOfBaseline))) = true;
 % smooth event with loess to estimate 
 % remove baseline, only events bigger than specified percentile stay
-prof_s = nan(size(prof));
-prof_s(m_eventWithBsl) = smooth(prof(m_eventWithBsl), ...
-    min(0.99, options.smoothSpan/numel(prof(m_eventWithBsl))), ...
-    'loess');
+if all(isnan(options.prof_t_s))
+    prof_s = nan(size(prof));
+    prof_s(m_eventWithBsl) = smooth(prof(m_eventWithBsl), ...
+        min(0.99, options.smoothSpan/numel(prof(m_eventWithBsl))), ...
+        'loess');
+else
+    prof_s = options.prof_t_s;
+end
 % calculate threshold from smoothed event
 percentl = prctile(prof_s(m_eventWithBsl & prof_s>0), ...
     [25 50 options.evntAcceptCrit]);
@@ -64,9 +70,10 @@ end
 %iqr = percentl(3)- percentl(1);
 bsl_thrsh = percentl(3);
 prof_s(isnan(prof_s)) = bsl_thrsh;
-% treshold profile
+% threshold profile
 prof_s(prof_s < bsl_thrsh) = bsl_thrsh;
-% get all posible peaks in smoothed profile of events
+% get all possible peaks in smoothed profile of events
+
 try
     [valPeaks_s, locPeaks_s] = findpeaks(prof_s(m_event));
     if isempty(locPeaks_s)
@@ -94,7 +101,7 @@ end
 % calculated on thresholded event profile
 % find start of event
 prof_s_beforePeak = prof_s(1:locPeaks_s(idx_p));
-% flip profile to calulate gradient from left to right
+% flip profile to calculate gradient from left to right
 prof_s_beforePeak = flipud(prof_s_beforePeak(:));
 pos_s = max( [...
     locPeaks_s(idx_p)-find(gradient(prof_s_beforePeak)>0, 1, 'first')+1, ...
@@ -110,7 +117,7 @@ pos_s = round(pos_s);
 % find end of event
 prof_s_afterPeak = prof_s(locPeaks_s(idx_p):end);
 if options.equalBaselineDur
-    % symetric baseline
+    % symmetric baseline
     pos_e = min( [...
         locPeaks_s(idx_p)+find(gradient(prof_s_afterPeak)>0, 1, 'first')-1, ...
         locPeaks_s(idx_p)+options.maxDurOfBaseline] );

@@ -8,7 +8,7 @@ options:
     peaks_vals = peaks values
     peaks_locs = peaks positions, in time units 
     ax_prof = handle to axes with time profile
-    coefPrevFit = coeficients from previous fit
+    coefPrevFit = coefficients from previous fit
     fitTol = fit tolerance
     numOfFitIter = number of iterations
     smooth_span = smoothing span prameter
@@ -16,6 +16,7 @@ options:
     sSpPrev = 
     eSpPrev = 
     evntsMask = mask of events in profile ...
+    prof_t_s = smoothed profile
     posOfSelPoints = 
     fitFun = expRise or sigmoid
 %}
@@ -36,6 +37,7 @@ arguments
     options.sSpPrev = []
     options.eSpPrev = []
     options.evntsMask (:,1) logical = true(size(t))
+    options.prof_t_s (:,1) {mustBeNumeric} = nan(size(t))
     options.posOfSelPoints = []
     options.fitFun (1,1) {mustBeText, ...
         mustBeMember(options.fitFun,{'expRise','sigmoid'})} = "expRise"
@@ -85,7 +87,7 @@ out.detectedEventsMask = false(numel(prof_t),1);
 % maximum duration of baseline in points
 switch eventType
     case 'global'
-        maxDurOfBaseline = ceil(1000/pxSzT);
+        maxDurOfBaseline = ceil(round((t(end)-t(1))/3)/pxSzT);
     case 'local'
         maxDurOfBaseline = ceil(100/pxSzT);
 end
@@ -104,6 +106,7 @@ if ~isempty(options.peaks_vals)
                 evntsMask=options.evntsMask, ...
                 equalBaselineDur=false, ...
                 smoothSpan=round(options.smooth_span/pxSzT), ...
+                prof_t_s=options.prof_t_s, ...
                 evntAcceptCrit=options.bs_crit);
         else
             % take provided ones

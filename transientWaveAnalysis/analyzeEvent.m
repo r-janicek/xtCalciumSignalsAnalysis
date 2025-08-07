@@ -74,7 +74,9 @@ switch selectedEvent.type
     
     % find separation between regions with different amplitudes
     [~,minLocs] = findpeaks(-yf_x);
-    
+    if isempty(minLocs)
+        [~,minLocs] = max(-yf_x);
+    end   
     % calculate exp decay time constant for different regions 
     % exp decay function 
     funExpFit = @(p,x,y) (p(1)*exp(-(x-p(2))/p(3))+p(4)) - y;

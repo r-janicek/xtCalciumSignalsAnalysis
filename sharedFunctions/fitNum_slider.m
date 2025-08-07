@@ -171,8 +171,8 @@ switch getappdata(mainFig,'analysisType')
 
         % set up window for fitting
         hObjsA.h_edit_paramFit1.String = ...
-            num2str( ceil(max(selectedEvent.ROIdata.dataROIs.t)/10) );
-
+            num2str( max([ceil(numel(selectedEvent.ROIdata.dataROIs.t)/20), ...
+                     min(5, numel(selectedEvent.ROIdata.dataROIs.t))]) );
         % set number of peaksfor a new event to 1
         hObjsA.h_edit_Npeaks.String = num2str(1);
 
